@@ -73,11 +73,19 @@ const (
 	ColumnScope        = "scope"
 	ColumnUsername     = "username"
 
+	ColumnAttachmentId = "attachment_id"
+
 	ColumnMessage = "message"
 
 	ColumnAppDefaultStatus = "app_default_status"
 
 	ColumnMarketId = "market_id"
+
+	ColumnController = "controller"
+
+	ColumnActive = "active"
+
+	ColumnOperator = "operator"
 )
 
 var PushEventTables = map[string][]string{
@@ -104,7 +112,7 @@ var IndexedColumns = map[string][]string{
 	},
 	TableAppVersion: {
 		ColumnVersionId, ColumnAppId, ColumnName, ColumnOwner, ColumnDescription,
-		ColumnPackageName, ColumnStatus,
+		ColumnPackageName, ColumnStatus, ColumnType,
 	},
 	TableJob: {
 		ColumnJobId, ColumnClusterId, ColumnAppId, ColumnVersionId,
@@ -114,7 +122,8 @@ var IndexedColumns = map[string][]string{
 		ColumnJobId, ColumnTaskId, ColumnExecutor, ColumnStatus, ColumnOwner,
 	},
 	TableRepo: {
-		ColumnRepoId, ColumnName, ColumnType, ColumnVisibility, ColumnStatus, ColumnAppDefaultStatus, ColumnOwner,
+		ColumnRepoId, ColumnName, ColumnType, ColumnVisibility, ColumnStatus,
+		ColumnAppDefaultStatus, ColumnOwner, ColumnController,
 	},
 	TableRuntime: {
 		ColumnRuntimeId, ColumnProvider, ColumnZone, ColumnStatus, ColumnOwner,
@@ -149,6 +158,9 @@ var IndexedColumns = map[string][]string{
 	},
 	TableMarketUser: {
 		ColumnMarketId, ColumnUserId,
+	},
+	TableAppVersionAudit: {
+		ColumnVersionId, ColumnAppId, ColumnStatus, ColumnOperator, ColumnRole,
 	},
 }
 

@@ -48,9 +48,9 @@
     group_id:
       type: '[]string'
     limit:
-      type: integer
+      type: int64
     offset:
-      type: integer
+      type: int64
     reverse:
       type: boolean
     search_word:
@@ -67,9 +67,9 @@
     group_id:
       type: '[]string'
     limit:
-      type: integer
+      type: int64
     offset:
-      type: integer
+      type: int64
     reverse:
       type: boolean
     role:
@@ -139,35 +139,15 @@
   description: create app
   service: AppManager
   body:
-    category_id:
-      type: string
-    chart_name:
-      type: string
-    description:
-      type: string
-    home:
-      type: string
     icon:
-      type: string
-    keywords:
-      type: string
-    maintainers:
-      type: string
+      type: byte
     name:
       type: string
-    owner:
+    version_name:
       type: string
-    package:
+    version_package:
       type: byte
-    readme:
-      type: string
-    repo_id:
-      type: string
-    screenshots:
-      type: string
-    sources:
-      type: string
-    status:
+    version_type:
       type: string
 - action: CreateAppVersion
   description: create app version
@@ -177,38 +157,16 @@
       type: string
     description:
       type: string
-    home:
-      type: string
-    icon:
-      type: string
-    keywords:
-      type: string
-    maintainers:
-      type: string
     name:
-      type: string
-    owner:
       type: string
     package:
       type: byte
-    package_name:
-      type: string
-    readme:
-      type: string
-    screenshots:
-      type: string
-    sequence:
-      type: integer
-    sources:
-      type: string
-    status:
+    type:
       type: string
 - action: DeleteAppVersion
   description: delete app version
   service: AppManager
   body:
-    direct_delete:
-      type: boolean
     version_id:
       type: string
 - action: DeleteApps
@@ -217,9 +175,7 @@
   body:
     app_id:
       type: '[]string'
-    direct_delete:
-      type: boolean
-- action: DescribeAppVersions
+- action: DescribeActiveAppVersions
   description: describe app versions with filter
   service: AppManager
   query:
@@ -228,11 +184,11 @@
     description:
       type: '[]string'
     limit:
-      type: integer
+      type: int64
     name:
       type: '[]string'
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     package_name:
@@ -244,6 +200,86 @@
     sort_key:
       type: string
     status:
+      type: '[]string'
+    type:
+      type: '[]string'
+    version_id:
+      type: '[]string'
+- action: DescribeActiveApps
+  description: describe apps with filter
+  service: AppManager
+  query:
+    app_id:
+      type: '[]string'
+    category_id:
+      type: '[]string'
+    chart_name:
+      type: '[]string'
+    limit:
+      type: int64
+    name:
+      type: '[]string'
+    offset:
+      type: int64
+    owner:
+      type: '[]string'
+    repo_id:
+      type: '[]string'
+    reverse:
+      type: boolean
+    search_word:
+      type: string
+    sort_key:
+      type: string
+    status:
+      type: '[]string'
+- action: DescribeAppVersionAudits
+  description: DescribeAppVersionAudits
+  service: AppManager
+  query:
+    limit:
+      type: int64
+    offset:
+      type: int64
+    operator:
+      type: '[]string'
+    reverse:
+      type: boolean
+    role:
+      type: '[]string'
+    search_word:
+      type: string
+    sort_key:
+      type: string
+    status:
+      type: '[]string'
+- action: DescribeAppVersions
+  description: describe app versions with filter
+  service: AppManager
+  query:
+    app_id:
+      type: '[]string'
+    description:
+      type: '[]string'
+    limit:
+      type: int64
+    name:
+      type: '[]string'
+    offset:
+      type: int64
+    owner:
+      type: '[]string'
+    package_name:
+      type: '[]string'
+    reverse:
+      type: boolean
+    search_word:
+      type: string
+    sort_key:
+      type: string
+    status:
+      type: '[]string'
+    type:
       type: '[]string'
     version_id:
       type: '[]string'
@@ -258,11 +294,11 @@
     chart_name:
       type: '[]string'
     limit:
-      type: integer
+      type: int64
     name:
       type: '[]string'
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     repo_id:
@@ -300,13 +336,9 @@
       type: string
     category_id:
       type: string
-    chart_name:
-      type: string
     description:
       type: string
     home:
-      type: string
-    icon:
       type: string
     keywords:
       type: string
@@ -314,17 +346,9 @@
       type: string
     name:
       type: string
-    owner:
-      type: string
     readme:
       type: string
-    repo_id:
-      type: string
-    screenshots:
-      type: string
     sources:
-      type: string
-    status:
       type: string
 - action: ModifyAppVersion
   description: modify app version
@@ -332,32 +356,12 @@
   body:
     description:
       type: string
-    home:
-      type: string
-    icon:
-      type: string
-    keywords:
-      type: string
-    maintainers:
-      type: string
     name:
-      type: string
-    owner:
       type: string
     package:
       type: byte
-    package_name:
-      type: string
-    readme:
-      type: string
-    screenshots:
-      type: string
-    sequence:
-      type: integer
-    sources:
-      type: string
-    status:
-      type: string
+    package_files:
+      type: object
     version_id:
       type: string
 - action: PassAppVersion
@@ -398,6 +402,28 @@
   body:
     version_id:
       type: string
+- action: UploadAppAttachment
+  description: UploadAppAttachment
+  service: AppManager
+  body:
+    app_id:
+      type: string
+    attachment_content:
+      type: byte
+    sequence:
+      type: integer
+    type: {}
+- action: ValidatePackage
+  description: ValidatePackage
+  service: AppManager
+  body:
+    version_package:
+      type: byte
+    version_type:
+      type: string
+- action: GetAttachment
+  description: get attachment
+  service: AttachmentService
 - action: CreateCategory
   description: create category
   service: CategoryManager
@@ -421,11 +447,11 @@
     category_id:
       type: '[]string'
     limit:
-      type: integer
+      type: int64
     name:
       type: '[]string'
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     reverse:
@@ -529,11 +555,11 @@
     cluster_id:
       type: string
     limit:
-      type: integer
+      type: int64
     node_id:
       type: '[]string'
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     reverse:
@@ -559,9 +585,9 @@
     frontgate_id:
       type: '[]string'
     limit:
-      type: integer
+      type: int64
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     reverse:
@@ -585,11 +611,11 @@
     key_pair_id:
       type: string
     limit:
-      type: integer
+      type: int64
     name:
       type: string
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     pub_key:
@@ -603,15 +629,15 @@
     advanced_param:
       type: '[]string'
     limit:
-      type: integer
+      type: int64
     offset:
-      type: integer
+      type: int64
     runtime_id:
       type: string
     subnet_id:
       type: '[]string'
     subnet_type:
-      type: integer
+      type: int64
     zone:
       type: '[]string'
 - action: DetachKeyPairs
@@ -719,10 +745,10 @@
       type: '[]string'
     limit:
       help: default is 20, max value is 200.
-      type: integer
+      type: int64
     offset:
       help: default is 0.
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     provider:
@@ -756,11 +782,11 @@
   service: MarketManager
   query:
     limit:
-      type: integer
+      type: int64
     market_id:
       type: '[]string'
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     reverse:
@@ -776,13 +802,13 @@
   service: MarketManager
   query:
     limit:
-      type: integer
+      type: int64
     market_id:
       type: '[]string'
     name:
       type: '[]string'
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     reverse:
@@ -832,9 +858,9 @@
   service: RepoIndexer
   query:
     limit:
-      type: integer
+      type: int64
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     repo_event_id:
@@ -889,14 +915,16 @@
       type: '[]string'
     category_id:
       type: '[]string'
+    controller:
+      type: int32
     label:
       type: string
     limit:
-      type: integer
+      type: int64
     name:
       type: '[]string'
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     provider:
@@ -998,9 +1026,9 @@
     label:
       type: string
     limit:
-      type: integer
+      type: int64
     offset:
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     provider:
@@ -1038,10 +1066,10 @@
       type: '[]string'
     limit:
       help: default is 20, max value is 200.
-      type: integer
+      type: int64
     offset:
       help: default is 0.
-      type: integer
+      type: int64
     owner:
       type: '[]string'
     search_word:

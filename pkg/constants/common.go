@@ -21,7 +21,10 @@ const (
 	IAMServiceHost      = prefix + "iam-service"
 	RepoIndexerHost     = prefix + "repo-indexer"
 	CategoryManagerHost = prefix + "category-manager"
-	MarketManagerHost   = prefix + "market-manager"
+
+	MarketManagerHost = prefix + "market-manager"
+
+	AttachmentManagerHost = prefix + "attachment-manager"
 )
 
 const (
@@ -42,6 +45,8 @@ const (
 	FrontgateFileServerPort = 9116
 	MarketManagerPort       = 9117
 	EtcdServicePort         = 2379
+
+	AttachmentManagerPort = 9120
 )
 
 const (
@@ -72,6 +77,8 @@ const (
 
 	StatusAvailable = "available"
 	StatusInUse     = "in-use"
+
+	StatusInUse2 = "in_use"
 
 	StatusDraft     = "draft"
 	StatusSubmitted = "submitted"
@@ -137,6 +144,7 @@ const (
 	ProviderQingCloud  = "qingcloud"
 	ProviderKubernetes = "kubernetes"
 	ProviderAWS        = "aws"
+	ProviderAliyun     = "aliyun"
 	TargetPilot        = "pilot"
 )
 

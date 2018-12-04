@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -30,7 +31,8 @@ import (
 )
 
 var (
-	NamespaceRegExp = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+	NamespaceReg    = `^[a-z]([-a-z0-9]*[a-z0-9])?$`
+	NamespaceRegExp = regexp.MustCompile(NamespaceReg)
 )
 
 type KubeHandler struct {
@@ -282,11 +284,11 @@ func (p *KubeHandler) checkTillerIsExistedAndRunning(client *kubernetes.Clientse
 
 	deploy, err := deployCli.Get("tiller-deploy", metav1.GetOptions{})
 	if err != nil {
-		return err
+		return gerr.NewWithDetail(nil, gerr.Unavailable, err, gerr.ErrorTillerNotServe, "kube-system")
 	}
 
 	if deploy.Status.ReadyReplicas != deploy.Status.Replicas {
-		return fmt.Errorf("you need to wait tiller to be ready")
+		return gerr.NewWithDetail(nil, gerr.Unavailable, err, gerr.ErrorTillerNotServe, "kube-system")
 	}
 
 	return nil
@@ -294,12 +296,13 @@ func (p *KubeHandler) checkTillerIsExistedAndRunning(client *kubernetes.Clientse
 
 func (p *KubeHandler) ValidateCredential(credential, zone string) error {
 	if !NamespaceRegExp.MatchString(zone) {
-		return fmt.Errorf(`namespace must match with regexp "[a-z0-9]([-a-z0-9]*[a-z0-9])?"`)
+		err := fmt.Errorf(`namespace must match with regexp "[a-z0-9]([-a-z0-9]*[a-z0-9])?"`)
+		return gerr.NewWithDetail(nil, gerr.PermissionDenied, err, gerr.ErrorNamespaceNotMatchWithRegex, zone, NamespaceReg)
 	}
 
 	client, _, err := p.initKubeClientWithCredential(credential)
 	if err != nil {
-		return err
+		return gerr.NewWithDetail(nil, gerr.InvalidArgument, err, gerr.ErrorCredentialIllegal, "kubeconfig")
 	}
 
 	err = p.checkTillerIsExistedAndRunning(client, credential, zone)
@@ -312,13 +315,15 @@ func (p *KubeHandler) ValidateCredential(credential, zone string) error {
 		// modify runtime
 		_, err = cli.Get(zone, metav1.GetOptions{})
 		if err != nil {
-			return err
+			return gerr.NewWithDetail(nil, gerr.PermissionDenied, err, gerr.ErrorNamespaceUnavailable, zone)
 		}
 	} else {
 		// create runtime
-		_, err := cli.Get(zone, metav1.GetOptions{})
+		// if not exist namespace, create new namespace with annotations
+		// if exist namespace, should not with annotations
+		namespace, err := cli.Get(zone, metav1.GetOptions{})
 		if err != nil {
-			logger.Info(p.ctx, "namespace [%s] not exist, need create", zone)
+			logger.Info(p.ctx, "namespace [%s] not exist, need create", fmt.Sprintf("namespace: %s", zone))
 			_, err = cli.Create(&corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: zone,
@@ -328,10 +333,21 @@ func (p *KubeHandler) ValidateCredential(credential, zone string) error {
 				},
 			})
 			if err != nil {
-				return err
+				return gerr.NewWithDetail(nil, gerr.Internal, err, gerr.ErrorCreateResourceFailed, zone)
 			}
 		} else {
-			return fmt.Errorf("namespace [%s] already exist", zone)
+			runtimeAnnotation, isExist := namespace.Annotations[RuntimeAnnotationKey]
+			if isExist {
+				err = fmt.Errorf("namespace [%s] annotations %s:%s already exist", zone, RuntimeAnnotationKey, runtimeAnnotation)
+				return gerr.NewWithDetail(nil, gerr.AlreadyExists, err, gerr.ErrorNamespaceExists, zone)
+			} else {
+				logger.Info(p.ctx, "namespace [%s] exist, need update", zone)
+				_, err = cli.Patch(zone, types.StrategicMergePatchType,
+					[]byte(fmt.Sprintf(`{"metadata": {"annotations": {"%s": "%s"}}}`, RuntimeAnnotationKey, p.RuntimeId)))
+				if err != nil {
+					return gerr.NewWithDetail(nil, gerr.Internal, err, gerr.ErrorUpdateResourceFailed, fmt.Sprintf("namespace: %s", zone))
+				}
+			}
 		}
 	}
 

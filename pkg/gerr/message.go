@@ -12,7 +12,7 @@ type ErrorMessage struct {
 	zhCN string
 }
 
-func (em ErrorMessage) Message(locale string, a ...interface{}) string {
+func (em ErrorMessage) Message(locale string, err error, a ...interface{}) string {
 	format := ""
 	switch locale {
 	case En:
@@ -24,7 +24,11 @@ func (em ErrorMessage) Message(locale string, a ...interface{}) string {
 			format = em.en
 		}
 	}
-	return fmt.Sprintf(format, a...)
+	if err != nil {
+		return fmt.Sprintf("%s: %s", fmt.Sprintf(format, a...), err.Error())
+	} else {
+		return fmt.Sprintf(format, a...)
+	}
 }
 
 var (
@@ -112,6 +116,11 @@ var (
 		Name: "update_resource_env_failed",
 		en:   "update resource [%s] env failed",
 		zhCN: "更新资源[%s]环境变量失败",
+	}
+	ErrorUpdateResourceFailed = ErrorMessage{
+		Name: "update_resource_failed",
+		en:   "update resource [%s] failed",
+		zhCN: "更新资源[%s]失败",
 	}
 	ErrorStopResourceFailed = ErrorMessage{
 		Name: "stop_resource_failed",
@@ -322,5 +331,45 @@ var (
 		Name: "exists_no_delete_versions",
 		en:   "app [%s] had some versions not deleted",
 		zhCN: "应用[%s]还有未删除的版本",
+	}
+	ErrorTillerNotServe = ErrorMessage{
+		Name: "tiller_not_serve",
+		en:   "tiller not serve in namespace [%s]",
+		zhCN: "tiller 在命名空间[%s]下未正常服务",
+	}
+	ErrorNamespaceUnavailable = ErrorMessage{
+		Name: "namespace_unavailable",
+		en:   "namespace [%s] unavailable",
+		zhCN: "命名空间[%s]不可用",
+	}
+	ErrorNamespaceNotMatchWithRegex = ErrorMessage{
+		Name: "namespace_not_match_with_regex",
+		en:   "namespace [%s] not match with regex [%s]",
+		zhCN: "命名空间[%s]命名不合法, 需要满足[%s]",
+	}
+	ErrorCredentialIllegal = ErrorMessage{
+		Name: "credential_illegal",
+		en:   "credential [%s] illegal",
+		zhCN: "credential [%s]不合法",
+	}
+	ErrorNamespaceExists = ErrorMessage{
+		Name: "namespace exists",
+		en:   "namespace [%s] exists",
+		zhCN: "命名空间[%s]已存在",
+	}
+	ErrorPackageParseFailed = ErrorMessage{
+		Name: "package_parse_failed",
+		en:   "package parse failed",
+		zhCN: "配置包解析失败",
+	}
+	ErrorAppNameConflictWithPackage = ErrorMessage{
+		Name: "app_name_conflict_with_package",
+		en:   "app name conflict with package",
+		zhCN: "应用名称与配置包内信息冲突",
+	}
+	ErrorImageDecodeFailed = ErrorMessage{
+		Name: "image_decode_failed",
+		en:   "image decode failed",
+		zhCN: "图片解码失败",
 	}
 )
