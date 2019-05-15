@@ -9,6 +9,7 @@ import (
 
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/pb"
+	"openpitrix.io/openpitrix/pkg/sender"
 	"openpitrix.io/openpitrix/pkg/util/idutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
 )
@@ -33,6 +34,7 @@ type ClusterNode struct {
 	TransitionStatus string
 	GroupId          uint32
 	Owner            string
+	OwnerPath        sender.OwnerPath
 	GlobalServerId   uint32
 	CustomMetadata   string
 	PubKey           string
@@ -75,6 +77,7 @@ func ClusterNodeToPb(clusterNode *ClusterNode) *pb.ClusterNode {
 		Status:           pbutil.ToProtoString(clusterNode.Status),
 		TransitionStatus: pbutil.ToProtoString(clusterNode.TransitionStatus),
 		GroupId:          pbutil.ToProtoUInt32(clusterNode.GroupId),
+		OwnerPath:        clusterNode.OwnerPath.ToProtoString(),
 		Owner:            pbutil.ToProtoString(clusterNode.Owner),
 		GlobalServerId:   pbutil.ToProtoUInt32(clusterNode.GlobalServerId),
 		CustomMetadata:   pbutil.ToProtoString(clusterNode.CustomMetadata),
@@ -105,6 +108,7 @@ func ClusterNodeWithKeyPairsToPb(clusterNodeKeyPairs *ClusterNodeWithKeyPairs) *
 		Status:           pbutil.ToProtoString(clusterNodeKeyPairs.Status),
 		TransitionStatus: pbutil.ToProtoString(clusterNodeKeyPairs.TransitionStatus),
 		GroupId:          pbutil.ToProtoUInt32(clusterNodeKeyPairs.GroupId),
+		OwnerPath:        clusterNodeKeyPairs.OwnerPath.ToProtoString(),
 		Owner:            pbutil.ToProtoString(clusterNodeKeyPairs.Owner),
 		GlobalServerId:   pbutil.ToProtoUInt32(clusterNodeKeyPairs.GlobalServerId),
 		CustomMetadata:   pbutil.ToProtoString(clusterNodeKeyPairs.CustomMetadata),
@@ -121,6 +125,7 @@ func ClusterNodeWithKeyPairsToPb(clusterNodeKeyPairs *ClusterNodeWithKeyPairs) *
 }
 
 func PbToClusterNode(pbClusterNode *pb.ClusterNode) *ClusterNodeWithKeyPairs {
+	ownerPath := sender.OwnerPath(pbClusterNode.GetOwnerPath().GetValue())
 	clusterNodeKeyPairs := &ClusterNodeWithKeyPairs{
 		ClusterNode: &ClusterNode{
 			NodeId:           pbClusterNode.GetNodeId().GetValue(),
@@ -137,15 +142,16 @@ func PbToClusterNode(pbClusterNode *pb.ClusterNode) *ClusterNodeWithKeyPairs {
 			Status:           pbClusterNode.GetStatus().GetValue(),
 			TransitionStatus: pbClusterNode.GetTransitionStatus().GetValue(),
 			GroupId:          pbClusterNode.GetGroupId().GetValue(),
-			Owner:            pbClusterNode.GetOwner().GetValue(),
+			OwnerPath:        ownerPath,
+			Owner:            ownerPath.Owner(),
 			GlobalServerId:   pbClusterNode.GetGlobalServerId().GetValue(),
 			CustomMetadata:   pbClusterNode.GetCustomMetadata().GetValue(),
 			PubKey:           pbClusterNode.GetPubKey().GetValue(),
 			HealthStatus:     pbClusterNode.GetHealthStatus().GetValue(),
 			IsBackup:         pbClusterNode.GetIsBackup().GetValue(),
 			AutoBackup:       pbClusterNode.GetAutoBackup().GetValue(),
-			CreateTime:       pbutil.FromProtoTimestamp(pbClusterNode.GetCreateTime()),
-			StatusTime:       pbutil.FromProtoTimestamp(pbClusterNode.GetCreateTime()),
+			CreateTime:       pbutil.GetTime(pbClusterNode.GetCreateTime()),
+			StatusTime:       pbutil.GetTime(pbClusterNode.GetCreateTime()),
 			HostId:           pbClusterNode.HostId.GetValue(),
 			HostIp:           pbClusterNode.HostIp.GetValue(),
 		},

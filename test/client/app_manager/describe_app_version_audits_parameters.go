@@ -63,26 +63,61 @@ for the describe app version audits operation typically these are written to a h
 */
 type DescribeAppVersionAuditsParams struct {
 
-	/*AppID*/
-	AppID string
-	/*Limit*/
+	/*AppID
+	  app ids.
+
+	*/
+	AppID []string
+	/*DisplayColumns
+	  select columns to display.
+
+	*/
+	DisplayColumns []string
+	/*Limit
+	  data limit per page, default is 20, max value is 200.
+
+	*/
 	Limit *int64
-	/*Offset*/
+	/*Offset
+	  data offset, default is 0.
+
+	*/
 	Offset *int64
-	/*Operator*/
+	/*Operator
+	  auditer of app version.
+
+	*/
 	Operator []string
-	/*Reverse*/
+	/*OperatorType
+	  operator type eg.[global_admin|developer|business|technical|isv].
+
+	*/
+	OperatorType []string
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
 	Reverse *bool
-	/*Role*/
-	Role []string
-	/*SearchWord*/
+	/*SearchWord
+	  query key, support these fields(version_id, app_id, status, operator, role).
+
+	*/
 	SearchWord *string
-	/*SortKey*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
 	SortKey *string
-	/*Status*/
+	/*Status
+	  app version audit status eg.[draft|submitted|passed|rejected|active|in-review|deleted|suspended].
+
+	*/
 	Status []string
-	/*VersionID*/
-	VersionID string
+	/*VersionID
+	  app version ids.
+
+	*/
+	VersionID []string
 
 	timeout    time.Duration
 	Context    context.Context
@@ -123,14 +158,25 @@ func (o *DescribeAppVersionAuditsParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithAppID adds the appID to the describe app version audits params
-func (o *DescribeAppVersionAuditsParams) WithAppID(appID string) *DescribeAppVersionAuditsParams {
+func (o *DescribeAppVersionAuditsParams) WithAppID(appID []string) *DescribeAppVersionAuditsParams {
 	o.SetAppID(appID)
 	return o
 }
 
 // SetAppID adds the appId to the describe app version audits params
-func (o *DescribeAppVersionAuditsParams) SetAppID(appID string) {
+func (o *DescribeAppVersionAuditsParams) SetAppID(appID []string) {
 	o.AppID = appID
+}
+
+// WithDisplayColumns adds the displayColumns to the describe app version audits params
+func (o *DescribeAppVersionAuditsParams) WithDisplayColumns(displayColumns []string) *DescribeAppVersionAuditsParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe app version audits params
+func (o *DescribeAppVersionAuditsParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithLimit adds the limit to the describe app version audits params
@@ -166,6 +212,17 @@ func (o *DescribeAppVersionAuditsParams) SetOperator(operator []string) {
 	o.Operator = operator
 }
 
+// WithOperatorType adds the operatorType to the describe app version audits params
+func (o *DescribeAppVersionAuditsParams) WithOperatorType(operatorType []string) *DescribeAppVersionAuditsParams {
+	o.SetOperatorType(operatorType)
+	return o
+}
+
+// SetOperatorType adds the operatorType to the describe app version audits params
+func (o *DescribeAppVersionAuditsParams) SetOperatorType(operatorType []string) {
+	o.OperatorType = operatorType
+}
+
 // WithReverse adds the reverse to the describe app version audits params
 func (o *DescribeAppVersionAuditsParams) WithReverse(reverse *bool) *DescribeAppVersionAuditsParams {
 	o.SetReverse(reverse)
@@ -175,17 +232,6 @@ func (o *DescribeAppVersionAuditsParams) WithReverse(reverse *bool) *DescribeApp
 // SetReverse adds the reverse to the describe app version audits params
 func (o *DescribeAppVersionAuditsParams) SetReverse(reverse *bool) {
 	o.Reverse = reverse
-}
-
-// WithRole adds the role to the describe app version audits params
-func (o *DescribeAppVersionAuditsParams) WithRole(role []string) *DescribeAppVersionAuditsParams {
-	o.SetRole(role)
-	return o
-}
-
-// SetRole adds the role to the describe app version audits params
-func (o *DescribeAppVersionAuditsParams) SetRole(role []string) {
-	o.Role = role
 }
 
 // WithSearchWord adds the searchWord to the describe app version audits params
@@ -222,13 +268,13 @@ func (o *DescribeAppVersionAuditsParams) SetStatus(status []string) {
 }
 
 // WithVersionID adds the versionID to the describe app version audits params
-func (o *DescribeAppVersionAuditsParams) WithVersionID(versionID string) *DescribeAppVersionAuditsParams {
+func (o *DescribeAppVersionAuditsParams) WithVersionID(versionID []string) *DescribeAppVersionAuditsParams {
 	o.SetVersionID(versionID)
 	return o
 }
 
 // SetVersionID adds the versionId to the describe app version audits params
-func (o *DescribeAppVersionAuditsParams) SetVersionID(versionID string) {
+func (o *DescribeAppVersionAuditsParams) SetVersionID(versionID []string) {
 	o.VersionID = versionID
 }
 
@@ -240,8 +286,19 @@ func (o *DescribeAppVersionAuditsParams) WriteToRequest(r runtime.ClientRequest,
 	}
 	var res []error
 
-	// path param app_id
-	if err := r.SetPathParam("app_id", o.AppID); err != nil {
+	valuesAppID := o.AppID
+
+	joinedAppID := swag.JoinByFormat(valuesAppID, "multi")
+	// query array param app_id
+	if err := r.SetQueryParam("app_id", joinedAppID...); err != nil {
+		return err
+	}
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
 		return err
 	}
 
@@ -285,6 +342,14 @@ func (o *DescribeAppVersionAuditsParams) WriteToRequest(r runtime.ClientRequest,
 		return err
 	}
 
+	valuesOperatorType := o.OperatorType
+
+	joinedOperatorType := swag.JoinByFormat(valuesOperatorType, "multi")
+	// query array param operator_type
+	if err := r.SetQueryParam("operator_type", joinedOperatorType...); err != nil {
+		return err
+	}
+
 	if o.Reverse != nil {
 
 		// query param reverse
@@ -299,14 +364,6 @@ func (o *DescribeAppVersionAuditsParams) WriteToRequest(r runtime.ClientRequest,
 			}
 		}
 
-	}
-
-	valuesRole := o.Role
-
-	joinedRole := swag.JoinByFormat(valuesRole, "multi")
-	// query array param role
-	if err := r.SetQueryParam("role", joinedRole...); err != nil {
-		return err
 	}
 
 	if o.SearchWord != nil {
@@ -349,8 +406,11 @@ func (o *DescribeAppVersionAuditsParams) WriteToRequest(r runtime.ClientRequest,
 		return err
 	}
 
-	// path param version_id
-	if err := r.SetPathParam("version_id", o.VersionID); err != nil {
+	valuesVersionID := o.VersionID
+
+	joinedVersionID := swag.JoinByFormat(valuesVersionID, "multi")
+	// query array param version_id
+	if err := r.SetQueryParam("version_id", joinedVersionID...); err != nil {
 		return err
 	}
 

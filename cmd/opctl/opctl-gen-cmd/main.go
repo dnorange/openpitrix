@@ -55,7 +55,7 @@ const PreActionTmpl = `
 {{- if (gt (len $element.Body) 0)}}
 {{/*   this if post action   */}}
 type {{$element.Action}}Cmd struct {
-	*models.Openpitrix{{$element.Action}}Request
+	*models.Openpitrix{{$element.Request}}
 {{- range $name, $p := $element.Body}}
 {{- if (eq $p.Type "byte")}}
 	{{pascalCase $name}}Path string
@@ -65,7 +65,7 @@ type {{$element.Action}}Cmd struct {
 
 func New{{$element.Action}}Cmd() Cmd {
 	cmd := &{{$element.Action}}Cmd{}
-	cmd.Openpitrix{{$element.Action}}Request = &models.Openpitrix{{$element.Action}}Request{}
+	cmd.Openpitrix{{$element.Request}} = &models.Openpitrix{{$element.Request}}{}
 	return cmd
 }
 
@@ -100,7 +100,10 @@ func (c *{{$element.Action}}Cmd) Run(out Out) error {
 {{- end}}
 {{- end}}
 	params := {{snakeCase $element.Service}}.New{{$element.Action}}Params()
-	params.WithBody(c.Openpitrix{{$element.Action}}Request)
+	params.WithBody(c.Openpitrix{{$element.Request}})
+{{- range $name, $p := $element.Path}}
+	params.With{{pascalCase $name}}(c.{{pascalCase $name}})
+{{- end}}
 
 	out.WriteRequest(params)
 
@@ -152,14 +155,22 @@ func (c *{{$element.Action}}Cmd) ParseFlag(f Flag) {
 	f.Int32VarP(c.{{pascalCase $name}}, "{{$name}}", "{{$p.Shorthand}}", 0, "{{$p.Help}}")
 {{- end}}
 {{- end}}
+{{- range $name, $p := $element.Path}}
+	f.StringVarP(&c.{{pascalCase $name}}, "{{$name}}", "{{$p.Shorthand}}", "", "{{$p.Help}}")
+{{- end}}
 }
 
 func (c *{{$element.Action}}Cmd) Run(out Out) error {
+	params := c.{{$element.Action}}Params
 
-	out.WriteRequest(c.{{$element.Action}}Params)
+{{- range $name, $p := $element.Path}}
+	params.With{{pascalCase $name}}(c.{{pascalCase $name}})
+{{- end}}
+
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.{{$element.Service}}.{{$element.Action}}(c.{{$element.Action}}Params{{$auth}})
+	res, err := client.{{$element.Service}}.{{$element.Action}}(params{{$auth}})
 	if err != nil {
 		return err
 	}
@@ -187,6 +198,7 @@ func getTmpl(name, tmpl string) *template.Template {
 			str = stringutil.UnderscoreToCamelCase(str)
 			str = strings.Replace(str, "Id", "ID", -1)
 			str = strings.Replace(str, "Url", "URL", -1)
+			str = strings.Replace(str, "Api", "API", -1)
 			return str
 		},
 	}).Parse(tmpl)

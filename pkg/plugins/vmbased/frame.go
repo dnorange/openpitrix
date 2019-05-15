@@ -5,19 +5,15 @@
 package vmbased
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"sort"
 	"strings"
 
-	appclient "openpitrix.io/openpitrix/pkg/client/app"
 	clusterclient "openpitrix.io/openpitrix/pkg/client/cluster"
-	runtimeclient "openpitrix.io/openpitrix/pkg/client/runtime"
 	"openpitrix.io/openpitrix/pkg/config"
 	"openpitrix.io/openpitrix/pkg/constants"
-	"openpitrix.io/openpitrix/pkg/devkit"
 	"openpitrix.io/openpitrix/pkg/devkit/opapp"
 	"openpitrix.io/openpitrix/pkg/logger"
 	"openpitrix.io/openpitrix/pkg/models"
@@ -30,12 +26,11 @@ import (
 )
 
 type Frame struct {
-	Ctx                     context.Context
-	Job                     *models.Job
-	ClusterWrapper          *models.ClusterWrapper
-	FrontgateClusterWrapper *models.ClusterWrapper
-	Runtime                 *runtimeclient.Runtime
-	ImageConfig             *config.ImageConfig
+	Ctx                   context.Context
+	Job                   *models.Job
+	ClusterWrapper        *models.ClusterWrapper
+	Runtime               *models.RuntimeDetails
+	RuntimeProviderConfig *config.RuntimeProviderConfig
 }
 
 func (f *Frame) startConfdServiceLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
@@ -153,6 +148,10 @@ func (f *Frame) getPreAndPostStopGroupNodes(nodeIds []string) ([]string, []strin
 }
 
 func (f *Frame) deregisterCmdLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
+		ClusterWrapper: f.ClusterWrapper,
+		RuntimeDetails: f.Runtime,
+	}
 	taskLayer := new(models.TaskLayer)
 	for _, nodeId := range nodeIds {
 		ip := f.ClusterWrapper.ClusterNodesWithKeyPairs[nodeId].PrivateIp
@@ -161,6 +160,7 @@ func (f *Frame) deregisterCmdLayer(nodeIds []string, failureAllowed bool) *model
 			NodeId:      nodeId,
 			DroneIp:     ip,
 			Timeout:     TimeoutDeregister,
+			Cnodes:      jsonutil.ToString(metadata.GetCmdCnodes(nodeId, nil).Format()),
 		}
 		directive := jsonutil.ToString(meta)
 		deregisterCmdTask := &models.Task{
@@ -183,6 +183,10 @@ func (f *Frame) deregisterCmdLayer(nodeIds []string, failureAllowed bool) *model
 }
 
 func (f *Frame) registerCmdLayer(nodeIds []string, serviceName string, failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
+		ClusterWrapper: f.ClusterWrapper,
+		RuntimeDetails: f.Runtime,
+	}
 	taskLayer := new(models.TaskLayer)
 	for _, nodeId := range nodeIds {
 		role := f.ClusterWrapper.ClusterNodesWithKeyPairs[nodeId].Role
@@ -207,15 +211,12 @@ func (f *Frame) registerCmdLayer(nodeIds []string, serviceName string, failureAl
 				Cmd:     service.Cmd,
 				Timeout: timeout,
 			}
-			cnodes := map[string]map[string]*models.Cmd{
-				ip: {"cmd": cmd},
-			}
 			meta := &models.Meta{
 				FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
 				NodeId:      nodeId,
 				DroneIp:     ip,
 				Timeout:     timeout,
-				Cnodes:      jsonutil.ToString(cnodes),
+				Cnodes:      jsonutil.ToString(metadata.GetCmdCnodes(nodeId, cmd)),
 			}
 			directive := jsonutil.ToString(meta)
 			registerCmdTask := &models.Task{
@@ -493,7 +494,7 @@ func (f *Frame) createVolumesLayer(nodeIds []string, failureAllowed bool) *model
 				JobId:          f.Job.JobId,
 				Owner:          f.Job.Owner,
 				TaskAction:     ActionCreateVolumes,
-				Target:         f.Runtime.Provider,
+				Target:         f.Runtime.RuntimeId,
 				NodeId:         nodeId,
 				Directive:      directive,
 				FailureAllowed: failureAllowed,
@@ -525,7 +526,7 @@ func (f *Frame) detachVolumesLayer(nodeIds []string, failureAllowed bool) *model
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionDetachVolumes,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -554,7 +555,7 @@ func (f *Frame) attachVolumesLayer(nodeIds []string, failureAllowed bool) *model
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionAttachVolumes,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -583,7 +584,7 @@ func (f *Frame) deleteVolumesLayer(nodeIds []string, failureAllowed bool) *model
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionDeleteVolumes,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -619,7 +620,7 @@ func (f *Frame) resizeVolumesLayer(nodeIds []string, roleResizeResource *models.
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionResizeVolumes,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -831,31 +832,50 @@ func (f *Frame) umountVolumeLayer(nodeIds []string, failureAllowed bool) *models
 	}
 }
 
-func (f *Frame) getUserDataExec(filename, contents, imageUrl, frontgateIp, certificateExec string) string {
+func (f *Frame) getUserDataExec(filename, contents, imageUrl, certificateExec string) string {
 	if pi.Global() == nil {
 		logger.Error(f.Ctx, "Pi global should be init.")
 		return ""
 	}
 
+	exec := fmt.Sprintf(`
+mkdir -p /opt/openpitrix/image/ /opt/openpitrix/conf/
+test -f /opt/openpitrix/conf/init && exit 0
+%s
+echo '%s' > %s
+for i in $(seq 1 100); do cd /opt/openpitrix/image/ && rm -rf * && wget %s && tar -xzvf * && break || sleep 3; done
+/opt/openpitrix/image/install_service.sh %s
+touch /opt/openpitrix/conf/init
+`, certificateExec, contents, f.getConfFile(), imageUrl, filename)
+	return exec
+}
+
+func FormatUserData(userData, frontgateIp string) string {
 	var mirror string
 	if len(frontgateIp) > 0 {
 		mirror = fmt.Sprintf("http://%s:5000", frontgateIp)
 	} else {
-		mirror = "https://registry.docker-cn.com"
+		mirror = pi.Global().GlobalConfig().Cluster.RegistryMirror
 	}
-	exec := fmt.Sprintf(`#!/bin/bash -e
 
-mkdir -p /opt/openpitrix/image/ /opt/openpitrix/conf/
-%s
-echo '%s' > %s
+	data := ""
+	if len(mirror) > 0 {
+		data = fmt.Sprintf(`#!/bin/bash -e
+
 mkdir -p /etc/docker/
 echo '{
   "registry-mirrors": ["%s"]
 }' > /etc/docker/daemon.json
-for i in $(seq 1 100); do cd /opt/openpitrix/image/ && rm -rf * && wget %s && tar -xzvf * && break || sleep 3; done
-/opt/openpitrix/image/install_service.sh %s
-`, certificateExec, contents, f.getConfFile(), mirror, imageUrl, filename)
-	return base64.StdEncoding.EncodeToString([]byte(exec))
+%s
+`, mirror, userData)
+	} else {
+		data = fmt.Sprintf(`#!/bin/bash -e
+
+%s
+`, userData)
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(data))
 }
 
 /*
@@ -928,14 +948,6 @@ func (f *Frame) setDroneConfigLayer(nodeIds []string, failureAllowed bool) *mode
 
 func (f *Frame) runInstancesLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
 	taskLayer := new(models.TaskLayer)
-	var frontgateIp string
-
-	if f.FrontgateClusterWrapper != nil {
-		for _, frontgateNode := range f.FrontgateClusterWrapper.ClusterNodesWithKeyPairs {
-			frontgateIp = frontgateNode.PrivateIp
-			break
-		}
-	}
 
 	for _, nodeId := range nodeIds {
 		clusterNode := f.ClusterWrapper.ClusterNodesWithKeyPairs[nodeId]
@@ -960,7 +972,7 @@ func (f *Frame) runInstancesLayer(nodeIds []string, failureAllowed bool) *models
 			Name:         clusterNode.ClusterId + "_" + nodeId + "_" + showName,
 			Hostname:     nodeId,
 			NodeId:       nodeId,
-			ImageId:      f.ImageConfig.ImageId,
+			ImageId:      f.RuntimeProviderConfig.ImageId,
 			Cpu:          int(clusterRole.Cpu),
 			Memory:       int(clusterRole.Memory),
 			Gpu:          int(clusterRole.Gpu),
@@ -972,16 +984,16 @@ func (f *Frame) runInstancesLayer(nodeIds []string, failureAllowed bool) *models
 		}
 		if f.ClusterWrapper.Cluster.ClusterType == constants.FrontgateClusterType {
 			frontgate := &Frontgate{f}
-			instance.UserDataValue = f.getUserDataExec(FrontgateConfFile, frontgate.getUserDataValue(nodeId), f.ImageConfig.ImageUrl, frontgateIp, frontgate.getCertificateExec())
+			instance.UserDataValue = f.getUserDataExec(FrontgateConfFile, frontgate.getUserDataValue(nodeId), f.RuntimeProviderConfig.ImageUrl, frontgate.getCertificateExec())
 		} else {
-			instance.UserDataValue = f.getUserDataExec(DroneConfFile, f.getUserDataValue(nodeId), f.ImageConfig.ImageUrl, frontgateIp, "")
+			instance.UserDataValue = f.getUserDataExec(DroneConfFile, f.getUserDataValue(nodeId), f.RuntimeProviderConfig.ImageUrl, "")
 		}
 		directive := jsonutil.ToString(instance)
 		runInstanceTask := &models.Task{
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionRunInstances,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -1012,7 +1024,7 @@ func (f *Frame) stopInstancesLayer(nodeIds []string, failureAllowed bool) *model
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionStopInstances,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -1043,7 +1055,7 @@ func (f *Frame) deleteInstancesLayer(nodeIds []string, failureAllowed bool) *mod
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionTerminateInstances,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: false,
@@ -1074,7 +1086,7 @@ func (f *Frame) startInstancesLayer(nodeIds []string, failureAllowed bool) *mode
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionStartInstances,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -1116,7 +1128,7 @@ func (f *Frame) resizeInstancesLayer(nodeIds []string, roleResizeResource *model
 			JobId:          f.Job.JobId,
 			Owner:          f.Job.Owner,
 			TaskAction:     ActionResizeInstances,
-			Target:         f.Runtime.Provider,
+			Target:         f.Runtime.RuntimeId,
 			NodeId:         nodeId,
 			Directive:      directive,
 			FailureAllowed: failureAllowed,
@@ -1141,7 +1153,7 @@ func (f *Frame) waitFrontgateLayer(failureAllowed bool) *models.TaskLayer {
 		JobId:          f.Job.JobId,
 		Owner:          f.Job.Owner,
 		TaskAction:     ActionWaitFrontgateAvailable,
-		Target:         f.Runtime.Provider,
+		Target:         f.Runtime.RuntimeId,
 		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
 		Directive:      directive,
 		FailureAllowed: failureAllowed,
@@ -1200,12 +1212,34 @@ func (f *Frame) registerMetadataLayer(failureAllowed bool) *models.TaskLayer {
 	}
 }
 
-func (f *Frame) registerNodesMetadataLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
-	metadata := &MetadataV1{
-		ClusterWrapper: f.ClusterWrapper,
-		Ctx:            f.Ctx,
+func (f *Frame) registerMetadataMappingLayer(failureAllowed bool) *models.TaskLayer {
+	// When the task is handled by task controller, the cnodes will be filled in,
+	meta := &models.Meta{
+		FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
+		Timeout:     TimeoutRegister,
+		ClusterId:   f.ClusterWrapper.Cluster.ClusterId,
 	}
-	cnodes := jsonutil.ToString(metadata.GetClusterNodeCnodes(nodeIds))
+	directive := jsonutil.ToString(meta)
+	registerMetadataTask := &models.Task{
+		JobId:          f.Job.JobId,
+		Owner:          f.Job.Owner,
+		TaskAction:     ActionRegisterMetadataMapping,
+		Target:         constants.TargetPilot,
+		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
+		Directive:      directive,
+		FailureAllowed: failureAllowed,
+	}
+	return &models.TaskLayer{
+		Tasks: []*models.Task{registerMetadataTask},
+	}
+}
+
+func (f *Frame) registerNodesMetadataLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
+		ClusterWrapper: f.ClusterWrapper,
+		RuntimeDetails: f.Runtime,
+	}
+	cnodes := jsonutil.ToString(metadata.GetClusterNodesCnodes(f.Ctx, nodeIds))
 	meta := &models.Meta{
 		FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
 		Timeout:     TimeoutRegister,
@@ -1227,13 +1261,40 @@ func (f *Frame) registerNodesMetadataLayer(nodeIds []string, failureAllowed bool
 	}
 }
 
+func (f *Frame) registerNodesMetadataMappingLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
+		ClusterWrapper: f.ClusterWrapper,
+		RuntimeDetails: f.Runtime,
+	}
+	cnodes := jsonutil.ToString(metadata.GetClusterNodesMappingCnodes(f.Ctx, nodeIds))
+	meta := &models.Meta{
+		FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
+		Timeout:     TimeoutRegister,
+		ClusterId:   f.ClusterWrapper.Cluster.ClusterId,
+		Cnodes:      cnodes,
+	}
+	directive := jsonutil.ToString(meta)
+	task := &models.Task{
+		JobId:          f.Job.JobId,
+		Owner:          f.Job.Owner,
+		TaskAction:     ActionRegisterNodesMetadataMapping,
+		Target:         constants.TargetPilot,
+		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
+		Directive:      directive,
+		FailureAllowed: failureAllowed,
+	}
+	return &models.TaskLayer{
+		Tasks: []*models.Task{task},
+	}
+}
+
 func (f *Frame) registerScalingNodesMetadataLayer(nodeIds []string, path string, failureAllowed bool) *models.TaskLayer {
 	clusterId := f.ClusterWrapper.Cluster.ClusterId
-	metadata := &MetadataV1{
+	metadata := &Metadata{
 		ClusterWrapper: f.ClusterWrapper,
-		Ctx:            f.Ctx,
+		RuntimeDetails: f.Runtime,
 	}
-	scalingCnodes := metadata.GetScalingCnodes(nodeIds, path)
+	scalingCnodes := metadata.GetScalingCnodes(f.Ctx, nodeIds, path)
 	if scalingCnodes == nil {
 		logger.Info(f.Ctx, "No new nodes for cluster [%s] is registered", clusterId)
 		return nil
@@ -1259,12 +1320,39 @@ func (f *Frame) registerScalingNodesMetadataLayer(nodeIds []string, path string,
 	}
 }
 
-func (f *Frame) deregisterNodesMetadataLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
-	metadata := &MetadataV1{
+func (f *Frame) registerEnvMetadataLayer(failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
 		ClusterWrapper: f.ClusterWrapper,
-		Ctx:            f.Ctx,
+		RuntimeDetails: f.Runtime,
 	}
-	cnodes := jsonutil.ToString(metadata.GetEmptyClusterNodeCnodes(nodeIds))
+	cnodes := jsonutil.ToString(metadata.GetClusterEnvCnodes(f.Ctx))
+	meta := &models.Meta{
+		FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
+		Timeout:     TimeoutRegister,
+		ClusterId:   f.ClusterWrapper.Cluster.ClusterId,
+		Cnodes:      cnodes,
+	}
+	directive := jsonutil.ToString(meta)
+	task := &models.Task{
+		JobId:          f.Job.JobId,
+		Owner:          f.Job.Owner,
+		TaskAction:     ActionRegisterEnvMetadata,
+		Target:         constants.TargetPilot,
+		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
+		Directive:      directive,
+		FailureAllowed: failureAllowed,
+	}
+	return &models.TaskLayer{
+		Tasks: []*models.Task{task},
+	}
+}
+
+func (f *Frame) deregisterNodesMetadataLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
+		ClusterWrapper: f.ClusterWrapper,
+		RuntimeDetails: f.Runtime,
+	}
+	cnodes := jsonutil.ToString(metadata.GetEmptyClusterNodeCnodes(f.Ctx, nodeIds))
 	meta := &models.Meta{
 		FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
 		Timeout:     TimeoutDeregister,
@@ -1276,6 +1364,33 @@ func (f *Frame) deregisterNodesMetadataLayer(nodeIds []string, failureAllowed bo
 		JobId:          f.Job.JobId,
 		Owner:          f.Job.Owner,
 		TaskAction:     ActionDeregisterMetadata,
+		Target:         constants.TargetPilot,
+		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
+		Directive:      directive,
+		FailureAllowed: failureAllowed,
+	}
+	return &models.TaskLayer{
+		Tasks: []*models.Task{task},
+	}
+}
+
+func (f *Frame) deregisterNodesMetadataMappingLayer(nodeIds []string, failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
+		ClusterWrapper: f.ClusterWrapper,
+		RuntimeDetails: f.Runtime,
+	}
+	cnodes := jsonutil.ToString(metadata.GetEmptyClusterNodeMappingCnodes(f.Ctx, nodeIds))
+	meta := &models.Meta{
+		FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
+		Timeout:     TimeoutDeregister,
+		ClusterId:   f.ClusterWrapper.Cluster.ClusterId,
+		Cnodes:      cnodes,
+	}
+	directive := jsonutil.ToString(meta)
+	task := &models.Task{
+		JobId:          f.Job.JobId,
+		Owner:          f.Job.Owner,
+		TaskAction:     ActionDeregisterMetadataMapping,
 		Target:         constants.TargetPilot,
 		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
 		Directive:      directive,
@@ -1317,9 +1432,9 @@ func (f *Frame) deregisterScalingNodesMetadataLayer(path string, failureAllowed 
 }
 
 func (f *Frame) deregisterMetadataLayer(failureAllowed bool) *models.TaskLayer {
-	metadata := &MetadataV1{
+	metadata := &Metadata{
 		ClusterWrapper: f.ClusterWrapper,
-		Ctx:            f.Ctx,
+		RuntimeDetails: f.Runtime,
 	}
 	cnodes := metadata.GetEmptyClusterCnodes()
 	meta := &models.Meta{
@@ -1333,6 +1448,33 @@ func (f *Frame) deregisterMetadataLayer(failureAllowed bool) *models.TaskLayer {
 		JobId:          f.Job.JobId,
 		Owner:          f.Job.Owner,
 		TaskAction:     ActionDeregisterMetadata,
+		Target:         constants.TargetPilot,
+		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
+		Directive:      directive,
+		FailureAllowed: failureAllowed,
+	}
+	return &models.TaskLayer{
+		Tasks: []*models.Task{deregisterMetadataTask},
+	}
+}
+
+func (f *Frame) deregisterMetadataMappingLayer(failureAllowed bool) *models.TaskLayer {
+	metadata := &Metadata{
+		ClusterWrapper: f.ClusterWrapper,
+		RuntimeDetails: f.Runtime,
+	}
+	cnodes := metadata.GetEmptyClusterMappingCnodes()
+	meta := &models.Meta{
+		FrontgateId: f.ClusterWrapper.Cluster.FrontgateId,
+		Timeout:     TimeoutDeregister,
+		ClusterId:   f.ClusterWrapper.Cluster.ClusterId,
+		Cnodes:      jsonutil.ToString(cnodes),
+	}
+	directive := jsonutil.ToString(meta)
+	deregisterMetadataTask := &models.Task{
+		JobId:          f.Job.JobId,
+		Owner:          f.Job.Owner,
+		TaskAction:     ActionDeregisterMetadataMapping,
 		Target:         constants.TargetPilot,
 		NodeId:         f.ClusterWrapper.Cluster.ClusterId,
 		Directive:      directive,
@@ -1361,8 +1503,10 @@ func (f *Frame) CreateClusterLayer() *models.TaskLayer {
 		Append(f.pingDroneLayer(nodeIds, false)).            // ping drone
 		Append(f.setDroneConfigLayer(nodeIds, false)).       // set drone config
 		Append(f.sshKeygenLayer(false)).                     // generate ssh key
-		Append(f.deregisterMetadataLayer(true)).             // deregister cluster
+		Append(f.deregisterMetadataLayer(true)).             // deregister cluster metadata
+		Append(f.deregisterMetadataMappingLayer(true)).      // deregister cluster metadata mapping
 		Append(f.registerMetadataLayer(false)).              // register cluster metadata
+		Append(f.registerMetadataMappingLayer(false)).       // register cluster metadata mapping
 		Append(f.startConfdServiceLayer(nodeIds, false)).    // start confd service
 		Append(f.initAndStartServiceLayer(nodeIds, false)).  // register init and start cmd to exec
 		Append(f.deregisterCmdLayer(nodeIds, true))          // deregister cmd
@@ -1383,7 +1527,8 @@ func (f *Frame) StopClusterLayer() *models.TaskLayer {
 		Append(f.umountVolumeLayer(nodeIds, true)).     // umount volume from instance
 		Append(f.stopInstancesLayer(nodeIds, false)).   // stop instance
 		Append(f.detachVolumesLayer(nodeIds, false)).   // detach volume from instance
-		Append(f.deregisterMetadataLayer(true))         // deregister cluster
+		Append(f.deregisterMetadataLayer(true)).        // deregister cluster metadata
+		Append(f.deregisterMetadataMappingLayer(true))  // deregister cluster metadata mapping
 
 	return headTaskLayer.Child
 }
@@ -1400,6 +1545,7 @@ func (f *Frame) StartClusterLayer() *models.TaskLayer {
 		Append(f.startInstancesLayer(nodeIds, false)).    // start instance
 		Append(f.waitFrontgateLayer(false)).              // wait frontgate cluster to be active
 		Append(f.registerMetadataLayer(false)).           // register cluster metadata
+		Append(f.registerMetadataMappingLayer(false)).    // register cluster metadata mapping
 		Append(f.pingDroneLayer(nodeIds, false)).         // ping drone
 		Append(f.setDroneConfigLayer(nodeIds, false)).    // set drone config
 		Append(f.startConfdServiceLayer(nodeIds, false)). // start confd service
@@ -1428,7 +1574,8 @@ func (f *Frame) DeleteClusterLayer() *models.TaskLayer {
 	headTaskLayer.
 		Append(f.deleteInstancesLayer(nodeIds, false)). // delete instance
 		Append(f.deleteVolumesLayer(nodeIds, false)).   // delete volume
-		Append(f.deregisterMetadataLayer(true))         // deregister cluster
+		Append(f.deregisterMetadataLayer(true)).        // deregister cluster metadata
+		Append(f.deregisterMetadataMappingLayer(true))  // deregister cluster metadata mapping
 
 	return headTaskLayer.Child
 }
@@ -1483,6 +1630,12 @@ func (f *Frame) DeleteClusterNodesLayer() *models.TaskLayer {
 		Append(f.deleteVolumesLayer(deleteNodeIds, false)).                        // delete volume
 		Append(f.deregisterNodesMetadataLayer(deleteNodeIds, false)).              // deregister deleting cluster nodes metadata
 		Append(f.deregisterScalingNodesMetadataLayer(RegisterNodeDeleting, false)) // deregister deleting nodes metadata
+	return headTaskLayer.Child
+}
+
+func (f *Frame) UpdateClusterEnvLayer() *models.TaskLayer {
+	headTaskLayer := new(models.TaskLayer)
+	headTaskLayer.Append(f.registerMetadataLayer(false)) // register cluster metadata
 	return headTaskLayer.Child
 }
 
@@ -1544,74 +1697,4 @@ func (f *Frame) DetachKeyPairsLayer(nodeKeyPairDetails models.NodeKeyPairDetails
 	}
 
 	return headTaskLayer.Child
-}
-
-func (f *Frame) ParseClusterConf(ctx context.Context, versionId, runtimeId, conf string, clusterWrapper *models.ClusterWrapper) error {
-	clusterConf := opapp.ClusterConf{}
-	// Normal cluster need package to generate final conf
-	if versionId != constants.FrontgateVersionId {
-		appManagerClient, err := appclient.NewAppManagerClient()
-		if err != nil {
-			logger.Error(f.Ctx, "Connect to app manager failed: %+v", err)
-			return err
-		}
-
-		req := &pb.GetAppVersionPackageRequest{
-			VersionId: pbutil.ToProtoString(versionId),
-		}
-
-		resp, err := appManagerClient.GetAppVersionPackage(ctx, req)
-		if err != nil {
-			logger.Error(f.Ctx, "Get app version [%s] package failed: %+v", versionId, err)
-			return err
-		}
-
-		appPackage, err := devkit.LoadArchive(bytes.NewReader(resp.GetPackage()))
-		if err != nil {
-			logger.Error(f.Ctx, "Load app version [%s] package failed: %+v", versionId, err)
-			return err
-		}
-		var confJson jsonutil.Json
-		if len(conf) == 0 {
-			confJson = appPackage.ConfigTemplate.GetDefaultConfig()
-		} else {
-			confJson, err = jsonutil.NewJson([]byte(conf))
-			if err != nil {
-				logger.Error(f.Ctx, "Parse conf [%s] failed: %+v", conf, err)
-				return err
-			}
-		}
-		err = appPackage.Validate(confJson)
-		if err != nil {
-			logger.Error(f.Ctx, "Validate conf [%s] failed: %+v", conf, err)
-			return err
-		}
-		clusterConf, err = appPackage.ClusterConfTemplate.Render(confJson)
-		if err != nil {
-			logger.Error(f.Ctx, "Render app version [%s] cluster template failed: %+v", versionId, err)
-			return err
-		}
-		err = clusterConf.Validate()
-		if err != nil {
-			logger.Error(f.Ctx, "Validate app version [%s] conf [%s] failed: %+v", versionId, conf, err)
-			return err
-		}
-		clusterConf.AppId = resp.GetAppId().GetValue()
-		clusterConf.VersionId = resp.GetVersionId().GetValue()
-	} else {
-		err := jsonutil.Decode([]byte(conf), &clusterConf)
-		if err != nil {
-			logger.Error(f.Ctx, "Parse conf [%s] to cluster failed: %+v", conf, err)
-			return err
-		}
-	}
-
-	parser := Parser{Ctx: f.Ctx}
-	err := parser.Parse(clusterConf, clusterWrapper)
-	if err != nil {
-		logger.Error(f.Ctx, "Parse app version [%s] failed: %+v", versionId, err)
-		return err
-	}
-
-	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/logger"
 	"openpitrix.io/openpitrix/pkg/pb"
+	"openpitrix.io/openpitrix/pkg/sender"
 	"openpitrix.io/openpitrix/pkg/util/idutil"
 	"openpitrix.io/openpitrix/pkg/util/jsonutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
@@ -26,6 +27,7 @@ type Task struct {
 	TaskAction     string
 	Directive      string
 	Owner          string
+	OwnerPath      sender.OwnerPath
 	Status         string
 	ErrorCode      uint32
 	Executor       string
@@ -38,7 +40,7 @@ type Task struct {
 
 var TaskColumns = db.GetColumnsFromStruct(&Task{})
 
-func NewTask(taskId, jobId, nodeId, target, taskAction, directive, userId string, failureAllowed bool) *Task {
+func NewTask(taskId, jobId, nodeId, target, taskAction, directive string, ownerPath sender.OwnerPath, failureAllowed bool) *Task {
 	if taskId == "" {
 		taskId = NewTaskId()
 	} else if taskId == constants.PlaceHolder {
@@ -51,7 +53,8 @@ func NewTask(taskId, jobId, nodeId, target, taskAction, directive, userId string
 		Target:         target,
 		TaskAction:     taskAction,
 		Directive:      directive,
-		Owner:          userId,
+		Owner:          ownerPath.Owner(),
+		OwnerPath:      ownerPath,
 		Status:         constants.StatusPending,
 		CreateTime:     time.Now(),
 		StatusTime:     time.Now(),
@@ -65,6 +68,7 @@ func TaskToPb(task *Task) *pb.Task {
 	pbTask.JobId = pbutil.ToProtoString(task.JobId)
 	pbTask.TaskAction = pbutil.ToProtoString(task.TaskAction)
 	pbTask.Directive = pbutil.ToProtoString(task.Directive)
+	pbTask.OwnerPath = task.OwnerPath.ToProtoString()
 	pbTask.Owner = pbutil.ToProtoString(task.Owner)
 	pbTask.Status = pbutil.ToProtoString(task.Status)
 	pbTask.ErrorCode = pbutil.ToProtoUInt32(task.ErrorCode)
@@ -80,6 +84,33 @@ func TaskToPb(task *Task) *pb.Task {
 func TasksToPbs(tasks []*Task) (pbTasks []*pb.Task) {
 	for _, task := range tasks {
 		pbTasks = append(pbTasks, TaskToPb(task))
+	}
+	return
+}
+
+func PbToTask(pbTask *pb.Task) *Task {
+	ownerPath := sender.OwnerPath(pbTask.GetOwnerPath().GetValue())
+	return &Task{
+		TaskId:         pbTask.GetTaskId().GetValue(),
+		JobId:          pbTask.GetJobId().GetValue(),
+		TaskAction:     pbTask.GetTaskAction().GetValue(),
+		Directive:      pbTask.GetDirective().GetValue(),
+		OwnerPath:      ownerPath,
+		Owner:          ownerPath.Owner(),
+		Status:         pbTask.GetStatus().GetValue(),
+		ErrorCode:      pbTask.GetErrorCode().GetValue(),
+		Executor:       pbTask.GetExecutor().GetValue(),
+		Target:         pbTask.GetTarget().GetValue(),
+		NodeId:         pbTask.GetNodeId().GetValue(),
+		FailureAllowed: pbTask.GetFailureAllowed().GetValue(),
+		CreateTime:     pbutil.GetTime(pbTask.GetCreateTime()),
+		StatusTime:     pbutil.GetTime(pbTask.GetStatusTime()),
+	}
+}
+
+func PbsToTasks(pbTasks []*pb.Task) (tasks []*Task) {
+	for _, pbTask := range pbTasks {
+		tasks = append(tasks, PbToTask(pbTask))
 	}
 	return
 }

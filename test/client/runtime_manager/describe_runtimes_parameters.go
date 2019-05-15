@@ -63,21 +63,55 @@ for the describe runtimes operation typically these are written to a http.Reques
 */
 type DescribeRuntimesParams struct {
 
-	/*Label*/
-	Label *string
-	/*Limit*/
+	/*DisplayColumns
+	  select columns to display.
+
+	*/
+	DisplayColumns []string
+	/*Limit
+	  data limit per page, default value 20, max value 200.
+
+	*/
 	Limit *int64
-	/*Offset*/
+	/*Offset
+	  data offset, default 0.
+
+	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  owner.
+
+	*/
 	Owner []string
-	/*Provider*/
+	/*Provider
+	  runtime provider eg.[qingcloud|aliyun|aws|kubernetes].
+
+	*/
 	Provider []string
-	/*RuntimeID*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
+	Reverse *bool
+	/*RuntimeID
+	  runtime ids.
+
+	*/
 	RuntimeID []string
-	/*SearchWord*/
+	/*SearchWord
+	  query key, support these fields(runtime_id, provider, zone, status, owner).
+
+	*/
 	SearchWord *string
-	/*Status*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
+	SortKey *string
+	/*Status
+	  status eg.[active|deleted].
+
+	*/
 	Status []string
 
 	timeout    time.Duration
@@ -118,15 +152,15 @@ func (o *DescribeRuntimesParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
-// WithLabel adds the label to the describe runtimes params
-func (o *DescribeRuntimesParams) WithLabel(label *string) *DescribeRuntimesParams {
-	o.SetLabel(label)
+// WithDisplayColumns adds the displayColumns to the describe runtimes params
+func (o *DescribeRuntimesParams) WithDisplayColumns(displayColumns []string) *DescribeRuntimesParams {
+	o.SetDisplayColumns(displayColumns)
 	return o
 }
 
-// SetLabel adds the label to the describe runtimes params
-func (o *DescribeRuntimesParams) SetLabel(label *string) {
-	o.Label = label
+// SetDisplayColumns adds the displayColumns to the describe runtimes params
+func (o *DescribeRuntimesParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithLimit adds the limit to the describe runtimes params
@@ -173,6 +207,17 @@ func (o *DescribeRuntimesParams) SetProvider(provider []string) {
 	o.Provider = provider
 }
 
+// WithReverse adds the reverse to the describe runtimes params
+func (o *DescribeRuntimesParams) WithReverse(reverse *bool) *DescribeRuntimesParams {
+	o.SetReverse(reverse)
+	return o
+}
+
+// SetReverse adds the reverse to the describe runtimes params
+func (o *DescribeRuntimesParams) SetReverse(reverse *bool) {
+	o.Reverse = reverse
+}
+
 // WithRuntimeID adds the runtimeID to the describe runtimes params
 func (o *DescribeRuntimesParams) WithRuntimeID(runtimeID []string) *DescribeRuntimesParams {
 	o.SetRuntimeID(runtimeID)
@@ -195,6 +240,17 @@ func (o *DescribeRuntimesParams) SetSearchWord(searchWord *string) {
 	o.SearchWord = searchWord
 }
 
+// WithSortKey adds the sortKey to the describe runtimes params
+func (o *DescribeRuntimesParams) WithSortKey(sortKey *string) *DescribeRuntimesParams {
+	o.SetSortKey(sortKey)
+	return o
+}
+
+// SetSortKey adds the sortKey to the describe runtimes params
+func (o *DescribeRuntimesParams) SetSortKey(sortKey *string) {
+	o.SortKey = sortKey
+}
+
 // WithStatus adds the status to the describe runtimes params
 func (o *DescribeRuntimesParams) WithStatus(status []string) *DescribeRuntimesParams {
 	o.SetStatus(status)
@@ -214,20 +270,12 @@ func (o *DescribeRuntimesParams) WriteToRequest(r runtime.ClientRequest, reg str
 	}
 	var res []error
 
-	if o.Label != nil {
+	valuesDisplayColumns := o.DisplayColumns
 
-		// query param label
-		var qrLabel string
-		if o.Label != nil {
-			qrLabel = *o.Label
-		}
-		qLabel := qrLabel
-		if qLabel != "" {
-			if err := r.SetQueryParam("label", qLabel); err != nil {
-				return err
-			}
-		}
-
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
+		return err
 	}
 
 	if o.Limit != nil {
@@ -278,6 +326,22 @@ func (o *DescribeRuntimesParams) WriteToRequest(r runtime.ClientRequest, reg str
 		return err
 	}
 
+	if o.Reverse != nil {
+
+		// query param reverse
+		var qrReverse bool
+		if o.Reverse != nil {
+			qrReverse = *o.Reverse
+		}
+		qReverse := swag.FormatBool(qrReverse)
+		if qReverse != "" {
+			if err := r.SetQueryParam("reverse", qReverse); err != nil {
+				return err
+			}
+		}
+
+	}
+
 	valuesRuntimeID := o.RuntimeID
 
 	joinedRuntimeID := swag.JoinByFormat(valuesRuntimeID, "multi")
@@ -296,6 +360,22 @@ func (o *DescribeRuntimesParams) WriteToRequest(r runtime.ClientRequest, reg str
 		qSearchWord := qrSearchWord
 		if qSearchWord != "" {
 			if err := r.SetQueryParam("search_word", qSearchWord); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	if o.SortKey != nil {
+
+		// query param sort_key
+		var qrSortKey string
+		if o.SortKey != nil {
+			qrSortKey = *o.SortKey
+		}
+		qSortKey := qrSortKey
+		if qSortKey != "" {
+			if err := r.SetQueryParam("sort_key", qSortKey); err != nil {
 				return err
 			}
 		}

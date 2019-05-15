@@ -8,6 +8,7 @@ import (
 	"context"
 
 	clusterclient "openpitrix.io/openpitrix/pkg/client/cluster"
+	runtimeclient "openpitrix.io/openpitrix/pkg/client/runtime"
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/logger"
@@ -59,7 +60,26 @@ func (p *Processor) Pre(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		instance.VolumeId = clusterNodes[0].GetVolumeId().GetValue()
+		clusterNode := clusterNodes[0]
+		instance.VolumeId = clusterNode.GetVolumeId().GetValue()
+
+		frontgateIp := ""
+		// Get frontgate node ip
+		clusters, err := clusterClient.GetClusters(ctx, []string{clusterNode.GetClusterId().GetValue()})
+		if err != nil {
+			return err
+		}
+		cluster := clusters[0]
+		if cluster.GetClusterType().GetValue() == constants.NormalClusterType {
+			frontgates, err := clusterClient.GetClusters(ctx, []string{cluster.GetFrontgateId().GetValue()})
+			if err != nil {
+				return err
+			}
+			for _, frontgateNode := range frontgates[0].ClusterNodeSet {
+				frontgateIp = frontgateNode.GetPrivateIp().GetValue()
+			}
+		}
+		instance.UserDataValue = vmbased.FormatUserData(instance.UserDataValue, frontgateIp)
 		// write back
 		p.Task.Directive = jsonutil.ToString(instance)
 
@@ -181,20 +201,76 @@ func (p *Processor) Pre(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		metadata := &vmbased.MetadataV1{
-			Ctx:            ctx,
-			ClusterWrapper: pbClusterWrappers[0],
+		runtimeId := pbClusterWrappers[0].Cluster.RuntimeId
+		runtime, err := runtimeclient.NewRuntime(ctx, runtimeId)
+		if err != nil {
+			logger.Error(ctx, "Get runtime [%s] failed: %+v", runtimeId, err)
+			return err
 		}
-		meta.Cnodes = jsonutil.ToString(metadata.GetClusterCnodes())
+		metadata := &vmbased.Metadata{
+			ClusterWrapper: pbClusterWrappers[0],
+			RuntimeDetails: runtime,
+		}
+		meta.Cnodes = jsonutil.ToString(metadata.GetClusterCnodes(ctx))
 
 		// write back
 		p.Task.Directive = jsonutil.ToString(meta)
 
-	case vmbased.ActionRegisterNodesMetadata:
+	case vmbased.ActionRegisterMetadataMapping:
+		meta, err := models.NewMeta(p.Task.Directive)
+		if err != nil {
+			return err
+		}
+		pbClusterWrappers, err := clusterClient.GetClusterWrappers(ctx, []string{meta.ClusterId})
+		if err != nil {
+			return err
+		}
+		runtimeId := pbClusterWrappers[0].Cluster.RuntimeId
+		runtime, err := runtimeclient.NewRuntime(ctx, runtimeId)
+		if err != nil {
+			logger.Error(ctx, "Get runtime [%s] failed: %+v", runtimeId, err)
+			return err
+		}
+		metadata := &vmbased.Metadata{
+			ClusterWrapper: pbClusterWrappers[0],
+			RuntimeDetails: runtime,
+		}
+		meta.Cnodes = jsonutil.ToString(metadata.GetClusterMappingCnodes(ctx))
+
+		// write back
+		p.Task.Directive = jsonutil.ToString(meta)
+
+	case vmbased.ActionDeregisterMetadataMapping:
+		meta, err := models.NewMeta(p.Task.Directive)
+		if err != nil {
+			return err
+		}
+		pbClusterWrappers, err := clusterClient.GetClusterWrappers(ctx, []string{meta.ClusterId})
+		if err != nil {
+			return err
+		}
+		runtimeId := pbClusterWrappers[0].Cluster.RuntimeId
+		runtime, err := runtimeclient.NewRuntime(ctx, runtimeId)
+		if err != nil {
+			logger.Error(ctx, "Get runtime [%s] failed: %+v", runtimeId, err)
+			return err
+		}
+		metadata := &vmbased.Metadata{
+			ClusterWrapper: pbClusterWrappers[0],
+			RuntimeDetails: runtime,
+		}
+		meta.Cnodes = jsonutil.ToString(metadata.GetEmptyClusterMappingCnodes())
+
+		// write back
+		p.Task.Directive = jsonutil.ToString(meta)
+
+	case vmbased.ActionRegisterNodesMetadata, vmbased.ActionRegisterEnvMetadata:
 		p.Task.TaskAction = vmbased.ActionRegisterMetadata
 
+	case vmbased.ActionRegisterNodesMetadataMapping:
+		p.Task.TaskAction = vmbased.ActionRegisterMetadataMapping
+
 	case vmbased.ActionRegisterCmd:
-		// when CreateCluster need to reload ip
 		meta, err := models.NewMeta(p.Task.Directive)
 		if err != nil {
 			return err
@@ -203,42 +279,24 @@ func (p *Processor) Pre(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if meta.DroneIp == "" {
+
+		cmdCnodes, err := models.NewCmdCnodes(meta.Cnodes)
+		if err != nil {
+			return err
+		}
+
+		if meta.DroneIp == "" || cmdCnodes.InstanceId == "" {
 			clusterNodes, err := clusterClient.GetClusterNodes(ctx, []string{meta.NodeId})
 			if err != nil {
 				return err
 			}
 			meta.DroneIp = clusterNodes[0].GetPrivateIp().GetValue()
+			cmdCnodes.InstanceId = clusterNodes[0].GetInstanceId().GetValue()
 		}
-		cnodes, err := models.NewCmdCnodes(meta.Cnodes)
-		if err != nil {
-			return err
-		}
-		err = cnodes.Format(meta.DroneIp, p.Task.TaskId)
-		if err != nil {
-			return err
-		}
-		meta.Cnodes = jsonutil.ToString(cnodes)
-		// write back
-		p.Task.Directive = jsonutil.ToString(meta)
 
-	case vmbased.ActionDeregisterCmd:
-		// when CreateCluster need to reload ip
-		meta, err := models.NewMeta(p.Task.Directive)
-		if err != nil {
-			return err
-		}
-		if meta.DroneIp == "" {
-			clusterNodes, err := clusterClient.GetClusterNodes(ctx, []string{meta.NodeId})
-			if err != nil {
-				return err
-			}
-			meta.DroneIp = clusterNodes[0].GetPrivateIp().GetValue()
-		}
-		meta.Cnodes = jsonutil.ToString(map[string]map[string]string{
-			meta.DroneIp: {"cmd": ""},
-		})
+		cmdCnodes.Cmd.Id = p.Task.TaskId
 
+		meta.Cnodes = jsonutil.ToString(cmdCnodes.Format())
 		// write back
 		p.Task.Directive = jsonutil.ToString(meta)
 
@@ -331,12 +389,12 @@ func (p *Processor) Pre(ctx context.Context) error {
 	// update directive when changed
 	if oldDirective != p.Task.Directive {
 		attributes := map[string]interface{}{
-			"directive": p.Task.Directive,
+			constants.ColumnDirective: p.Task.Directive,
 		}
 		_, err := pi.Global().DB(ctx).
 			Update(constants.TableTask).
 			SetMap(attributes).
-			Where(db.Eq("task_id", p.Task.TaskId)).
+			Where(db.Eq(constants.ColumnTaskId, p.Task.TaskId)).
 			Exec()
 		if err != nil {
 			logger.Error(ctx, "Failed to update task [%s]: %+v", p.Task.TaskId, err)

@@ -7,20 +7,17 @@ package runtime
 import (
 	"context"
 
-	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/manager"
 	"openpitrix.io/openpitrix/pkg/pb"
-	"openpitrix.io/openpitrix/pkg/pi"
 	"openpitrix.io/openpitrix/pkg/plugins"
-	"openpitrix.io/openpitrix/pkg/util/senderutil"
 )
 
 func (p *Server) Checker(ctx context.Context, req interface{}) error {
 	switch r := req.(type) {
 	case *pb.CreateRuntimeRequest:
 		return manager.NewChecker(ctx, r).
-			Required("name", "provider", "zone", "runtime_credential").
-			StringChosen("provider", plugins.GetAvailablePlugins(pi.Global().GlobalConfig().Cluster.Plugins)).
+			Required("name", "provider", "zone", "runtime_credential_id").
+			StringChosen("provider", plugins.GetAvailablePlugins()).
 			Exec()
 	case *pb.ModifyRuntimeRequest:
 		return manager.NewChecker(ctx, r).
@@ -30,29 +27,23 @@ func (p *Server) Checker(ctx context.Context, req interface{}) error {
 		return manager.NewChecker(ctx, r).
 			Required("runtime_id").
 			Exec()
+	case *pb.CreateRuntimeCredentialRequest:
+		return manager.NewChecker(ctx, r).
+			Required("name", "provider", "runtime_credential_content").
+			StringChosen("provider", plugins.GetAvailablePlugins()).
+			Exec()
+	case *pb.ModifyRuntimeCredentialRequest:
+		return manager.NewChecker(ctx, r).
+			Required("runtime_credential_id").
+			Exec()
+	case *pb.DeleteRuntimeCredentialsRequest:
+		return manager.NewChecker(ctx, r).
+			Required("runtime_credential_id").
+			Exec()
 	case *pb.DescribeRuntimeProviderZonesRequest:
 		return manager.NewChecker(ctx, r).
-			Required("provider", "runtime_url", "runtime_credential").
-			StringChosen("provider", plugins.GetAvailablePlugins(pi.Global().GlobalConfig().Cluster.Plugins)).
-			Exec()
-	case *pb.GetRuntimeStatisticsRequest:
-		return manager.NewChecker(ctx, r).
-			Role(constants.AllAdminRoles).
+			Required("runtime_credential_id").
 			Exec()
 	}
 	return nil
-}
-
-func (p *Server) Builder(ctx context.Context, req interface{}) interface{} {
-	sender := senderutil.GetSenderFromContext(ctx)
-	switch r := req.(type) {
-	case *pb.DescribeRuntimesRequest:
-		if sender.IsGlobalAdmin() {
-
-		} else {
-			r.Owner = []string{sender.UserId}
-		}
-		return r
-	}
-	return req
 }

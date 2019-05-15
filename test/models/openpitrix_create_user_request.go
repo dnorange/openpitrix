@@ -16,17 +16,20 @@ import (
 // swagger:model openpitrixCreateUserRequest
 type OpenpitrixCreateUserRequest struct {
 
-	// description
+	// user description
 	Description string `json:"description,omitempty"`
 
-	// email
+	// required, user email
 	Email string `json:"email,omitempty"`
 
-	// password
+	// required, user password
 	Password string `json:"password,omitempty"`
 
-	// role
-	Role string `json:"role,omitempty"`
+	// user phone number
+	PhoneNumber string `json:"phone_number,omitempty"`
+
+	// required, user role_id
+	RoleID string `json:"role_id,omitempty"`
 }
 
 // Validate validates this openpitrix create user request

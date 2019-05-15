@@ -10,21 +10,23 @@ import (
 	"sync"
 	"time"
 
-	"openpitrix.io/openpitrix/pkg/client"
-	accountclient "openpitrix.io/openpitrix/pkg/client/iam"
 	pilotclient "openpitrix.io/openpitrix/pkg/client/pilot"
+	providerclient "openpitrix.io/openpitrix/pkg/client/runtime_provider"
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/etcd"
+	"openpitrix.io/openpitrix/pkg/gerr"
 	"openpitrix.io/openpitrix/pkg/logger"
 	"openpitrix.io/openpitrix/pkg/models"
+	"openpitrix.io/openpitrix/pkg/pb"
 	"openpitrix.io/openpitrix/pkg/pb/metadata/types"
 	"openpitrix.io/openpitrix/pkg/pi"
-	"openpitrix.io/openpitrix/pkg/plugins"
 	"openpitrix.io/openpitrix/pkg/plugins/vmbased"
+	"openpitrix.io/openpitrix/pkg/sender"
 	"openpitrix.io/openpitrix/pkg/util/ctxutil"
 	"openpitrix.io/openpitrix/pkg/util/funcutil"
 	"openpitrix.io/openpitrix/pkg/util/jsonutil"
+	"openpitrix.io/openpitrix/pkg/util/pbutil"
 	"openpitrix.io/openpitrix/pkg/util/retryutil"
 )
 
@@ -48,7 +50,7 @@ func (c *Controller) updateTaskAttributes(ctx context.Context, taskId string, at
 	_, err := pi.Global().DB(ctx).
 		Update(constants.TableTask).
 		SetMap(attributes).
-		Where(db.Eq("task_id", taskId)).
+		Where(db.Eq(constants.ColumnTaskId, taskId)).
 		Exec()
 
 	return err
@@ -75,8 +77,8 @@ func (c *Controller) UpdateWorkingTasks(ctx context.Context) error {
 	//TODO: retry the tasks
 	_, err := pi.Global().DB(ctx).
 		Update(constants.TableTask).
-		SetMap(map[string]interface{}{"status": constants.StatusFailed}).
-		Where(db.Eq("status", constants.StatusWorking)).
+		SetMap(map[string]interface{}{constants.ColumnStatus: constants.StatusFailed}).
+		Where(db.Eq(constants.ColumnStatus, constants.StatusWorking)).
 		Exec()
 	return err
 }
@@ -106,7 +108,7 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 	query := pi.Global().DB(ctx).
 		Select(models.TaskColumns...).
 		From(constants.TableTask).
-		Where(db.Eq("task_id", taskId))
+		Where(db.Eq(constants.ColumnTaskId, taskId))
 
 	err := query.LoadOne(&task)
 	if err != nil {
@@ -115,20 +117,11 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 	}
 	ctx = ctxutil.AddMessageId(ctx, task.JobId)
 
-	accountClient, err := accountclient.NewClient()
-	if err != nil {
-		return err
-	}
-	users, err := accountClient.GetUsers(ctx, []string{task.Owner})
-	if err != nil {
-		return err
-	}
-
-	ctx = client.SetUserToContext(ctx, users[0])
+	ctx = ctxutil.ContextWithSender(ctx, sender.New(task.Owner, task.OwnerPath, ""))
 
 	err = c.updateTaskAttributes(ctx, task.TaskId, map[string]interface{}{
-		"status":   constants.StatusWorking,
-		"executor": c.hostname,
+		constants.ColumnStatus:   constants.StatusWorking,
+		constants.ColumnExecutor: c.hostname,
 	})
 	if err != nil {
 		logger.Error(ctx, "Failed to update task: %+v", err)
@@ -150,8 +143,6 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 		}
 
 		if task.Target == constants.TargetPilot {
-			withTimeoutCtx, cancel := context.WithTimeout(ctx, constants.GrpcToPilotTimeout)
-			defer cancel()
 			switch task.TaskAction {
 			case vmbased.ActionSetDroneConfig:
 				config := new(pbtypes.SetDroneConfigRequest)
@@ -160,8 +151,8 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					logger.Error(ctx, "Decode task directive [%s] failed: %+v", task.Directive, err)
 					return err
 				}
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err = pilotClient.SetDroneConfig(withTimeoutCtx, config)
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err = pilotClient.SetDroneConfigWithTimeout(ctx, config)
 					return err
 				})
 				if err != nil {
@@ -175,8 +166,8 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					logger.Error(ctx, "Decode task directive [%s] failed: %+v", task.Directive, err)
 					return err
 				}
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err = pilotClient.SetFrontgateConfig(withTimeoutCtx, config)
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err = pilotClient.SetFrontgateConfigWithTimeout(ctx, config)
 					return err
 				})
 				if err != nil {
@@ -191,9 +182,7 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					return err
 				}
 				err = funcutil.WaitForSpecificOrError(func() (bool, error) {
-					withTimeoutCtx, cancel := context.WithTimeout(ctx, constants.GrpcToPilotTimeout)
-					defer cancel()
-					_, err := pilotClient.PingDrone(withTimeoutCtx, droneEndpoint)
+					_, err := pilotClient.PingDroneWithTimeout(ctx, droneEndpoint)
 					if err != nil {
 						logger.Warn(ctx, "Send task to pilot failed, will retry: %+v", err)
 						return false, nil
@@ -214,9 +203,7 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					return err
 				}
 				err = funcutil.WaitForSpecificOrError(func() (bool, error) {
-					withTimeoutCtx, cancel := context.WithTimeout(ctx, constants.GrpcToPilotTimeout)
-					defer cancel()
-					_, err := pilotClient.PingFrontgate(withTimeoutCtx, request)
+					_, err := pilotClient.PingFrontgateWithTimeout(ctx, request)
 					if err != nil {
 						logger.Warn(ctx, "Send task to pilot failed, will retry: %+v", err)
 						return false, nil
@@ -237,9 +224,7 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					return err
 				}
 				err = funcutil.WaitForSpecificOrError(func() (bool, error) {
-					withTimeoutCtx, cancel := context.WithTimeout(ctx, constants.GrpcToPilotTimeout)
-					defer cancel()
-					_, err := pilotClient.PingMetadataBackend(withTimeoutCtx, request)
+					_, err := pilotClient.PingMetadataBackendWithTimeout(ctx, request)
 					if err != nil {
 						logger.Warn(ctx, "Send task to pilot failed, will retry: %+v", err)
 						return false, nil
@@ -254,13 +239,17 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 
 			case vmbased.ActionStartConfd:
 				pbTask := models.TaskToPb(task)
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err := pilotClient.HandleSubtask(withTimeoutCtx,
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err := pilotClient.HandleSubtaskWithTimeout(ctx,
 						&pbtypes.SubTaskMessage{
 							TaskId:    pbTask.TaskId.GetValue(),
 							Action:    pbTask.TaskAction.GetValue(),
 							Directive: pbTask.Directive.GetValue(),
 						})
+					if err != nil && strings.Contains(err.Error(), "drone: confd is running") {
+						logger.Debug(ctx, "Expected error: %+v", err)
+						return nil
+					}
 					return err
 				})
 				if err != nil {
@@ -272,8 +261,8 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 
 			case vmbased.ActionStopConfd:
 				pbTask := models.TaskToPb(task)
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err := pilotClient.HandleSubtask(withTimeoutCtx,
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err := pilotClient.HandleSubtaskWithTimeout(ctx,
 						&pbtypes.SubTaskMessage{
 							TaskId:    pbTask.TaskId.GetValue(),
 							Action:    pbTask.TaskAction.GetValue(),
@@ -298,15 +287,11 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					return err
 				}
 
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err = pilotClient.RunCommandOnDrone(withTimeoutCtx, request)
-					if err != nil {
-						if strings.Contains(err.Error(), "transport is closing") {
-							logger.Debug(ctx, "Expected error: %+v", err)
-							return nil
-						} else {
-							logger.Error(ctx, "%s", err.Error())
-						}
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err = pilotClient.RunCommandOnDroneWithTimeout(ctx, request)
+					if err != nil && strings.Contains(err.Error(), "transport is closing") {
+						logger.Debug(ctx, "Expected error: %+v", err)
+						return nil
 					}
 					return err
 				})
@@ -323,15 +308,11 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					return err
 				}
 
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err = pilotClient.RunCommandOnFrontgateNode(withTimeoutCtx, request)
-					if err != nil {
-						if strings.Contains(err.Error(), "context canceled") {
-							logger.Debug(ctx, "Expected error: %+v", err)
-							return nil
-						} else {
-							logger.Error(ctx, "%s", err.Error())
-						}
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err = pilotClient.RunCommandOnFrontgateNodeWithTimeout(ctx, request)
+					if err != nil && strings.Contains(err.Error(), "context canceled") {
+						logger.Debug(ctx, "Expected error: %+v", err)
+						return nil
 					}
 					return err
 				})
@@ -348,8 +329,8 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					return err
 				}
 
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err = pilotClient.RunCommandOnDrone(withTimeoutCtx, request)
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err = pilotClient.RunCommandOnDroneWithTimeout(ctx, request)
 					return err
 				})
 				if err != nil {
@@ -364,8 +345,8 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					logger.Error(ctx, "Decode task directive [%s] failed: %+v", task.Directive, err)
 					return err
 				}
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err = pilotClient.RunCommandOnFrontgateNode(withTimeoutCtx, request)
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err = pilotClient.RunCommandOnFrontgateNodeWithTimeout(ctx, request)
 					return err
 				})
 				if err != nil {
@@ -373,10 +354,14 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 					return err
 				}
 
-			case vmbased.ActionRegisterMetadata, vmbased.ActionDeregisterCmd, vmbased.ActionDeregisterMetadata:
+			case vmbased.ActionRegisterMetadata,
+				vmbased.ActionDeregisterCmd,
+				vmbased.ActionDeregisterMetadata,
+				vmbased.ActionRegisterMetadataMapping,
+				vmbased.ActionDeregisterMetadataMapping:
 				pbTask := models.TaskToPb(task)
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err := pilotClient.HandleSubtask(withTimeoutCtx,
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err := pilotClient.HandleSubtaskWithTimeout(ctx,
 						&pbtypes.SubTaskMessage{
 							TaskId:    pbTask.TaskId.GetValue(),
 							Action:    pbTask.TaskAction.GetValue(),
@@ -391,8 +376,8 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 
 			case vmbased.ActionRegisterCmd:
 				pbTask := models.TaskToPb(task)
-				err = retryutil.Retry(constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
-					_, err := pilotClient.HandleSubtask(withTimeoutCtx,
+				err = retryutil.RetryWithContext(ctx, constants.PilotTasksRetry, constants.PilotTasksSleep, func() error {
+					_, err := pilotClient.HandleSubtaskWithTimeout(ctx,
 						&pbtypes.SubTaskMessage{
 							TaskId:    pbTask.TaskId.GetValue(),
 							Action:    pbTask.TaskAction.GetValue(),
@@ -415,21 +400,29 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 				logger.Error(ctx, "Unknown task action [%s]", task.TaskAction)
 			}
 		} else {
-			providerInterface, err := plugins.GetProviderPlugin(ctx, task.Target)
+			providerClient, err := providerclient.NewRuntimeProviderManagerClient()
 			if err != nil {
-				logger.Error(ctx, "No such runtime [%s]. ", task.Target)
-				return err
+				return gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
 			}
-			err = providerInterface.HandleSubtask(ctx, task)
+			handleResponse, err := providerClient.HandleSubtask(ctx, &pb.HandleSubtaskRequest{
+				RuntimeId: pbutil.ToProtoString(task.Target),
+				Task:      models.TaskToPb(task),
+			})
 			if err != nil {
 				logger.Error(ctx, "Failed to handle subtask in runtime [%s]: %+v", task.Target, err)
 				return err
 			}
-			err = providerInterface.WaitSubtask(ctx, task)
+			withTimeoutCtx, cancel := context.WithTimeout(ctx, constants.MaxTaskTimeout)
+			defer cancel()
+			waitResponse, err := providerClient.WaitSubtask(withTimeoutCtx, &pb.WaitSubtaskRequest{
+				RuntimeId: handleResponse.Task.Target,
+				Task:      handleResponse.Task,
+			})
 			if err != nil {
 				logger.Error(ctx, "Failed to wait subtask in runtime [%s]: %+v", task.Target, err)
 				return err
 			}
+			processor.Task = models.PbToTask(waitResponse.Task)
 
 			logger.Debug(ctx, "After wait subtask directive: %s", task.Directive)
 		}
@@ -450,8 +443,8 @@ func (c *Controller) HandleTask(ctx context.Context, taskId string, cb func()) e
 
 	}
 	err = c.updateTaskAttributes(ctx, task.TaskId, map[string]interface{}{
-		"status":      status,
-		"status_time": time.Now(),
+		constants.ColumnStatus:     status,
+		constants.ColumnStatusTime: time.Now(),
 	})
 	if err != nil {
 		logger.Error(ctx, "Failed to update task: %+v", err)

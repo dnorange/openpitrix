@@ -1,41 +1,36 @@
+dist: xenial
 sudo: required
 env:
-- CHANGE_MINIKUBE_NONE_USER=true TEST_WITH_K8S=1
+  global:
+  - CHANGE_MINIKUBE_NONE_USER=true
+  matrix:
+  - TEST_SUITE=unit-test
+  - TEST_SUITE=e2e-test
+  - TEST_SUITE=e2e-k8s-test
+cache:
+  directories:
+  - tmp/cache
 services:
 - docker
 language: go
 go:
-- '1.10'
 - '1.11'
 go_import_path: openpitrix.io/openpitrix
 addons:
   apt:
     packages:
     - docker-ce
+    - socat
+    - ebtables
 before_install:
-- if [ "TRAVIS_REPO_SLUG" = "openpitrix/openpitrix" ]; then openssl aes-256-cbc -K $encrypted_31dac1cc4b44_key -iv $encrypted_31dac1cc4b44_iv -in key.yaml.enc -out key.yaml -d;fi
 - sudo docker run -d -it --name nsenter ubuntu:16.04 bash
 - sudo docker cp nsenter:/usr/bin/nsenter /usr/local/bin/nsenter
 - sudo docker stop nsenter && sudo docker rm nsenter
 - sudo curl -L "https://github.com/docker/compose/releases/download/1.22.0/docker-compose-$(uname
   -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 - sudo chmod +x /usr/local/bin/docker-compose
-- curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.10.0/bin/linux/amd64/kubectl
-  && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-- curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64
-  && chmod +x minikube && sudo mv minikube /usr/local/bin/
-- sudo minikube start --vm-driver=none --kubernetes-version=v1.10.0
-- minikube update-context
-- JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}';
-  until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do
-  sleep 1; done
-- DESIRED_VERSION=2.9.1 curl https://raw.githubusercontent.com/helm/helm/master/scripts/get
-  | DESIRED_VERSION=v2.9.1 bash
-- "./deploy/kubernetes/scripts/init-helm.sh"
-- until helm list -a; do sleep 1; done
-install:
-- curl https://pek3a.qingstor.com/releases-qs/qsctl/qsctl-latest-linux.tar.gz -O
-- tar -xzvf qsctl-latest-linux.tar.gz
+- ./deploy/kubernetes/scripts/install-minikube.sh
+- ./deploy/kubernetes/scripts/init-helm.sh
 before_script:
 - docker --version
 - docker-compose --version
@@ -46,13 +41,11 @@ before_script:
 - make compose-up
 - sleep 20
 script:
-- make unit-test && travis_wait 30 make e2e-test WITH_K8S=yes
+- travis_wait 30 make $TEST_SUITE
 before_deploy:
 - make clean
 - make release-openpitrix-$TRAVIS_TAG
 - make bin-release-openpitrix-$TRAVIS_TAG
-- cd image/amazon-linux/; tar -czvf amazon-linux.tar.gz *;cd ../..
-- cd image/ubuntu/; tar -czvf ubuntu.tar.gz *;cd ../..
 deploy:
 - provider: releases
   api_key:
@@ -60,7 +53,9 @@ deploy:
   file:
   - deploy/openpitrix-$TRAVIS_TAG-kubernetes.tar.gz
   - deploy/openpitrix-$TRAVIS_TAG-docker-compose.tar.gz
-  - deploy/openpitrix-$TRAVIS_TAG-bin.tar.gz
+  - deploy/openpitrix-$TRAVIS_TAG-linux-bin.tar.gz
+  - deploy/openpitrix-$TRAVIS_TAG-darwin-bin.tar.gz
+  - deploy/openpitrix-$TRAVIS_TAG-windows-bin.tar.gz
   skip_cleanup: true
   on:
     repo: openpitrix/openpitrix
@@ -71,10 +66,12 @@ deploy:
     branch: master
     repo: openpitrix/openpitrix
 - provider: script
+  script: bash image_package_upload $encrypted_31dac1cc4b44_key $encrypted_31dac1cc4b44_iv
+  on:
+    branch: master
+    repo: openpitrix/openpitrix
+- provider: script
   script: bash docker_push $TRAVIS_TAG
   on:
     tags: true
     repo: openpitrix/openpitrix
-after_deploy:
-- if [ "TRAVIS_REPO_SLUG" = "openpitrix/openpitrix" ]; then ./qsctl cp -f image/ubuntu/ubuntu.tar.gz qs://openpitrix/image/ubuntu.tar.gz -c key.yaml -z pek3a; fi
-- if [ "TRAVIS_REPO_SLUG" = "openpitrix/openpitrix" ]; then ./qsctl cp -f image/amazon-linux/amazon-linux.tar.gz qs://openpitrix/image/amazon-linux.tar.gz -c key.yaml -z pek3a; fi

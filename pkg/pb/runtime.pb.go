@@ -27,73 +27,170 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type RuntimeLabel struct {
-	LabelKey             *wrappers.StringValue `protobuf:"bytes,1,opt,name=label_key,json=labelKey,proto3" json:"label_key,omitempty"`
-	LabelValue           *wrappers.StringValue `protobuf:"bytes,2,opt,name=label_value,json=labelValue,proto3" json:"label_value,omitempty"`
-	CreateTime           *timestamp.Timestamp  `protobuf:"bytes,3,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+type RuntimeCredential struct {
+	// runtime credential id
+	RuntimeCredentialId *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	// runtime credential name
+	Name *wrappers.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// runtime credential description
+	Description *wrappers.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// runtime url eg.[http://www.qingyun.com]
+	RuntimeUrl *wrappers.StringValue `protobuf:"bytes,4,opt,name=runtime_url,json=runtimeUrl,proto3" json:"runtime_url,omitempty"`
+	// runtime credential content
+	RuntimeCredentialContent *wrappers.StringValue `protobuf:"bytes,5,opt,name=runtime_credential_content,json=runtimeCredentialContent,proto3" json:"runtime_credential_content,omitempty"`
+	// own path, concat string group_path:user_id
+	OwnerPath *wrappers.StringValue `protobuf:"bytes,6,opt,name=owner_path,json=ownerPath,proto3" json:"owner_path,omitempty"`
+	// runtime provider eg.[qingcloud|aliyun|aws|kubernetes]
+	Provider *wrappers.StringValue `protobuf:"bytes,7,opt,name=provider,proto3" json:"provider,omitempty"`
+	// runtime credential status eg.[active|deleted]
+	Status *wrappers.StringValue `protobuf:"bytes,8,opt,name=status,proto3" json:"status,omitempty"`
+	// the time when runtime credential create
+	CreateTime *timestamp.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// record status changed time
+	StatusTime *timestamp.Timestamp `protobuf:"bytes,10,opt,name=status_time,json=statusTime,proto3" json:"status_time,omitempty"`
+	// debug or not
+	Debug *wrappers.BoolValue `protobuf:"bytes,11,opt,name=debug,proto3" json:"debug,omitempty"`
+	// owner
+	Owner                *wrappers.StringValue `protobuf:"bytes,12,opt,name=owner,proto3" json:"owner,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
 }
 
-func (m *RuntimeLabel) Reset()         { *m = RuntimeLabel{} }
-func (m *RuntimeLabel) String() string { return proto.CompactTextString(m) }
-func (*RuntimeLabel) ProtoMessage()    {}
-func (*RuntimeLabel) Descriptor() ([]byte, []int) {
+func (m *RuntimeCredential) Reset()         { *m = RuntimeCredential{} }
+func (m *RuntimeCredential) String() string { return proto.CompactTextString(m) }
+func (*RuntimeCredential) ProtoMessage()    {}
+func (*RuntimeCredential) Descriptor() ([]byte, []int) {
 	return fileDescriptor_86e2dd377c869464, []int{0}
 }
 
-func (m *RuntimeLabel) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RuntimeLabel.Unmarshal(m, b)
+func (m *RuntimeCredential) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RuntimeCredential.Unmarshal(m, b)
 }
-func (m *RuntimeLabel) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RuntimeLabel.Marshal(b, m, deterministic)
+func (m *RuntimeCredential) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RuntimeCredential.Marshal(b, m, deterministic)
 }
-func (m *RuntimeLabel) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RuntimeLabel.Merge(m, src)
+func (m *RuntimeCredential) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RuntimeCredential.Merge(m, src)
 }
-func (m *RuntimeLabel) XXX_Size() int {
-	return xxx_messageInfo_RuntimeLabel.Size(m)
+func (m *RuntimeCredential) XXX_Size() int {
+	return xxx_messageInfo_RuntimeCredential.Size(m)
 }
-func (m *RuntimeLabel) XXX_DiscardUnknown() {
-	xxx_messageInfo_RuntimeLabel.DiscardUnknown(m)
+func (m *RuntimeCredential) XXX_DiscardUnknown() {
+	xxx_messageInfo_RuntimeCredential.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RuntimeLabel proto.InternalMessageInfo
+var xxx_messageInfo_RuntimeCredential proto.InternalMessageInfo
 
-func (m *RuntimeLabel) GetLabelKey() *wrappers.StringValue {
+func (m *RuntimeCredential) GetRuntimeCredentialId() *wrappers.StringValue {
 	if m != nil {
-		return m.LabelKey
+		return m.RuntimeCredentialId
 	}
 	return nil
 }
 
-func (m *RuntimeLabel) GetLabelValue() *wrappers.StringValue {
+func (m *RuntimeCredential) GetName() *wrappers.StringValue {
 	if m != nil {
-		return m.LabelValue
+		return m.Name
 	}
 	return nil
 }
 
-func (m *RuntimeLabel) GetCreateTime() *timestamp.Timestamp {
+func (m *RuntimeCredential) GetDescription() *wrappers.StringValue {
+	if m != nil {
+		return m.Description
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetRuntimeUrl() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeUrl
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetRuntimeCredentialContent() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeCredentialContent
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetOwnerPath() *wrappers.StringValue {
+	if m != nil {
+		return m.OwnerPath
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetProvider() *wrappers.StringValue {
+	if m != nil {
+		return m.Provider
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetStatus() *wrappers.StringValue {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetCreateTime() *timestamp.Timestamp {
 	if m != nil {
 		return m.CreateTime
 	}
 	return nil
 }
 
+func (m *RuntimeCredential) GetStatusTime() *timestamp.Timestamp {
+	if m != nil {
+		return m.StatusTime
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetDebug() *wrappers.BoolValue {
+	if m != nil {
+		return m.Debug
+	}
+	return nil
+}
+
+func (m *RuntimeCredential) GetOwner() *wrappers.StringValue {
+	if m != nil {
+		return m.Owner
+	}
+	return nil
+}
+
 type Runtime struct {
-	RuntimeId            *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
-	Name                 *wrappers.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description          *wrappers.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Provider             *wrappers.StringValue `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
-	RuntimeUrl           *wrappers.StringValue `protobuf:"bytes,5,opt,name=runtime_url,json=runtimeUrl,proto3" json:"runtime_url,omitempty"`
-	Zone                 *wrappers.StringValue `protobuf:"bytes,6,opt,name=zone,proto3" json:"zone,omitempty"`
-	Labels               []*RuntimeLabel       `protobuf:"bytes,7,rep,name=labels,proto3" json:"labels,omitempty"`
-	Owner                *wrappers.StringValue `protobuf:"bytes,8,opt,name=owner,proto3" json:"owner,omitempty"`
-	Status               *wrappers.StringValue `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`
-	CreateTime           *timestamp.Timestamp  `protobuf:"bytes,10,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	StatusTime           *timestamp.Timestamp  `protobuf:"bytes,11,opt,name=status_time,json=statusTime,proto3" json:"status_time,omitempty"`
+	// runtime id
+	RuntimeId *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
+	// runtime name,create by owner.
+	Name *wrappers.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// runtime description
+	Description *wrappers.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// runtime provider.eg.[qingcloud|aliyun|aws|kubernetes]
+	Provider *wrappers.StringValue `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
+	// runtime credential id
+	RuntimeCredentialId *wrappers.StringValue `protobuf:"bytes,5,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	// runtime zone eg.[pek3a|pek3b|...]
+	Zone *wrappers.StringValue `protobuf:"bytes,6,opt,name=zone,proto3" json:"zone,omitempty"`
+	// owner path, concat string group_path:user_id
+	OwnerPath *wrappers.StringValue `protobuf:"bytes,7,opt,name=owner_path,json=ownerPath,proto3" json:"owner_path,omitempty"`
+	// status eg.[active|deleted]
+	Status *wrappers.StringValue `protobuf:"bytes,8,opt,name=status,proto3" json:"status,omitempty"`
+	// the time when runtime create
+	CreateTime *timestamp.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// record status changed time
+	StatusTime *timestamp.Timestamp `protobuf:"bytes,10,opt,name=status_time,json=statusTime,proto3" json:"status_time,omitempty"`
+	// debug or not
+	Debug *wrappers.BoolValue `protobuf:"bytes,11,opt,name=debug,proto3" json:"debug,omitempty"`
+	// owner
+	Owner                *wrappers.StringValue `protobuf:"bytes,12,opt,name=owner,proto3" json:"owner,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -152,9 +249,9 @@ func (m *Runtime) GetProvider() *wrappers.StringValue {
 	return nil
 }
 
-func (m *Runtime) GetRuntimeUrl() *wrappers.StringValue {
+func (m *Runtime) GetRuntimeCredentialId() *wrappers.StringValue {
 	if m != nil {
-		return m.RuntimeUrl
+		return m.RuntimeCredentialId
 	}
 	return nil
 }
@@ -166,16 +263,9 @@ func (m *Runtime) GetZone() *wrappers.StringValue {
 	return nil
 }
 
-func (m *Runtime) GetLabels() []*RuntimeLabel {
+func (m *Runtime) GetOwnerPath() *wrappers.StringValue {
 	if m != nil {
-		return m.Labels
-	}
-	return nil
-}
-
-func (m *Runtime) GetOwner() *wrappers.StringValue {
-	if m != nil {
-		return m.Owner
+		return m.OwnerPath
 	}
 	return nil
 }
@@ -201,12 +291,28 @@ func (m *Runtime) GetStatusTime() *timestamp.Timestamp {
 	return nil
 }
 
+func (m *Runtime) GetDebug() *wrappers.BoolValue {
+	if m != nil {
+		return m.Debug
+	}
+	return nil
+}
+
+func (m *Runtime) GetOwner() *wrappers.StringValue {
+	if m != nil {
+		return m.Owner
+	}
+	return nil
+}
+
 type RuntimeDetail struct {
-	Runtime              *Runtime              `protobuf:"bytes,1,opt,name=runtime,proto3" json:"runtime,omitempty"`
-	RuntimeCredential    *wrappers.StringValue `protobuf:"bytes,2,opt,name=runtime_credential,json=runtimeCredential,proto3" json:"runtime_credential,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	// runtime
+	Runtime *Runtime `protobuf:"bytes,1,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	// runtime credential
+	RuntimeCredential    *RuntimeCredential `protobuf:"bytes,2,opt,name=runtime_credential,json=runtimeCredential,proto3" json:"runtime_credential,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *RuntimeDetail) Reset()         { *m = RuntimeDetail{} }
@@ -241,7 +347,7 @@ func (m *RuntimeDetail) GetRuntime() *Runtime {
 	return nil
 }
 
-func (m *RuntimeDetail) GetRuntimeCredential() *wrappers.StringValue {
+func (m *RuntimeDetail) GetRuntimeCredential() *RuntimeCredential {
 	if m != nil {
 		return m.RuntimeCredential
 	}
@@ -249,13 +355,16 @@ func (m *RuntimeDetail) GetRuntimeCredential() *wrappers.StringValue {
 }
 
 type CreateRuntimeRequest struct {
-	Name                 *wrappers.StringValue `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description          *wrappers.StringValue `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	Provider             *wrappers.StringValue `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
-	RuntimeUrl           *wrappers.StringValue `protobuf:"bytes,5,opt,name=runtime_url,json=runtimeUrl,proto3" json:"runtime_url,omitempty"`
-	Zone                 *wrappers.StringValue `protobuf:"bytes,6,opt,name=zone,proto3" json:"zone,omitempty"`
-	RuntimeCredential    *wrappers.StringValue `protobuf:"bytes,7,opt,name=runtime_credential,json=runtimeCredential,proto3" json:"runtime_credential,omitempty"`
-	Labels               *wrappers.StringValue `protobuf:"bytes,8,opt,name=labels,proto3" json:"labels,omitempty"`
+	// required, runtime name
+	Name *wrappers.StringValue `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// runtime description
+	Description *wrappers.StringValue `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	// required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]
+	Provider *wrappers.StringValue `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	// required, runtime credential id
+	RuntimeCredentialId *wrappers.StringValue `protobuf:"bytes,4,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	// required, runtime zone eg.[pek3a|pek3b|...]
+	Zone                 *wrappers.StringValue `protobuf:"bytes,5,opt,name=zone,proto3" json:"zone,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -307,9 +416,9 @@ func (m *CreateRuntimeRequest) GetProvider() *wrappers.StringValue {
 	return nil
 }
 
-func (m *CreateRuntimeRequest) GetRuntimeUrl() *wrappers.StringValue {
+func (m *CreateRuntimeRequest) GetRuntimeCredentialId() *wrappers.StringValue {
 	if m != nil {
-		return m.RuntimeUrl
+		return m.RuntimeCredentialId
 	}
 	return nil
 }
@@ -321,21 +430,8 @@ func (m *CreateRuntimeRequest) GetZone() *wrappers.StringValue {
 	return nil
 }
 
-func (m *CreateRuntimeRequest) GetRuntimeCredential() *wrappers.StringValue {
-	if m != nil {
-		return m.RuntimeCredential
-	}
-	return nil
-}
-
-func (m *CreateRuntimeRequest) GetLabels() *wrappers.StringValue {
-	if m != nil {
-		return m.Labels
-	}
-	return nil
-}
-
 type CreateRuntimeResponse struct {
+	// id of runtime created
 	RuntimeId            *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
@@ -375,17 +471,29 @@ func (m *CreateRuntimeResponse) GetRuntimeId() *wrappers.StringValue {
 }
 
 type DescribeRuntimesRequest struct {
-	RuntimeId            []string              `protobuf:"bytes,1,rep,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
-	Status               []string              `protobuf:"bytes,2,rep,name=status,proto3" json:"status,omitempty"`
-	Provider             []string              `protobuf:"bytes,3,rep,name=provider,proto3" json:"provider,omitempty"`
-	SearchWord           *wrappers.StringValue `protobuf:"bytes,4,opt,name=search_word,json=searchWord,proto3" json:"search_word,omitempty"`
-	Label                *wrappers.StringValue `protobuf:"bytes,5,opt,name=label,proto3" json:"label,omitempty"`
-	Owner                []string              `protobuf:"bytes,6,rep,name=owner,proto3" json:"owner,omitempty"`
-	Limit                uint32                `protobuf:"varint,7,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset               uint32                `protobuf:"varint,8,opt,name=offset,proto3" json:"offset,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	// query key, support these fields(runtime_id, provider, zone, status, owner)
+	SearchWord *wrappers.StringValue `protobuf:"bytes,1,opt,name=search_word,json=searchWord,proto3" json:"search_word,omitempty"`
+	// sort key, order by sort_key, default create_time
+	SortKey *wrappers.StringValue `protobuf:"bytes,2,opt,name=sort_key,json=sortKey,proto3" json:"sort_key,omitempty"`
+	// value = 0 sort ASC, value = 1 sort DESC
+	Reverse *wrappers.BoolValue `protobuf:"bytes,3,opt,name=reverse,proto3" json:"reverse,omitempty"`
+	// data limit per page, default value 20, max value 200
+	Limit uint32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	// data offset, default 0
+	Offset uint32 `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
+	// select columns to display
+	DisplayColumns []string `protobuf:"bytes,6,rep,name=display_columns,json=displayColumns,proto3" json:"display_columns,omitempty"`
+	// runtime ids
+	RuntimeId []string `protobuf:"bytes,11,rep,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
+	// status eg.[active|deleted]
+	Status []string `protobuf:"bytes,12,rep,name=status,proto3" json:"status,omitempty"`
+	// runtime provider eg.[qingcloud|aliyun|aws|kubernetes]
+	Provider []string `protobuf:"bytes,13,rep,name=provider,proto3" json:"provider,omitempty"`
+	// owner
+	Owner                []string `protobuf:"bytes,14,rep,name=owner,proto3" json:"owner,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *DescribeRuntimesRequest) Reset()         { *m = DescribeRuntimesRequest{} }
@@ -413,6 +521,48 @@ func (m *DescribeRuntimesRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DescribeRuntimesRequest proto.InternalMessageInfo
 
+func (m *DescribeRuntimesRequest) GetSearchWord() *wrappers.StringValue {
+	if m != nil {
+		return m.SearchWord
+	}
+	return nil
+}
+
+func (m *DescribeRuntimesRequest) GetSortKey() *wrappers.StringValue {
+	if m != nil {
+		return m.SortKey
+	}
+	return nil
+}
+
+func (m *DescribeRuntimesRequest) GetReverse() *wrappers.BoolValue {
+	if m != nil {
+		return m.Reverse
+	}
+	return nil
+}
+
+func (m *DescribeRuntimesRequest) GetLimit() uint32 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *DescribeRuntimesRequest) GetOffset() uint32 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
+func (m *DescribeRuntimesRequest) GetDisplayColumns() []string {
+	if m != nil {
+		return m.DisplayColumns
+	}
+	return nil
+}
+
 func (m *DescribeRuntimesRequest) GetRuntimeId() []string {
 	if m != nil {
 		return m.RuntimeId
@@ -434,20 +584,6 @@ func (m *DescribeRuntimesRequest) GetProvider() []string {
 	return nil
 }
 
-func (m *DescribeRuntimesRequest) GetSearchWord() *wrappers.StringValue {
-	if m != nil {
-		return m.SearchWord
-	}
-	return nil
-}
-
-func (m *DescribeRuntimesRequest) GetLabel() *wrappers.StringValue {
-	if m != nil {
-		return m.Label
-	}
-	return nil
-}
-
 func (m *DescribeRuntimesRequest) GetOwner() []string {
 	if m != nil {
 		return m.Owner
@@ -455,22 +591,10 @@ func (m *DescribeRuntimesRequest) GetOwner() []string {
 	return nil
 }
 
-func (m *DescribeRuntimesRequest) GetLimit() uint32 {
-	if m != nil {
-		return m.Limit
-	}
-	return 0
-}
-
-func (m *DescribeRuntimesRequest) GetOffset() uint32 {
-	if m != nil {
-		return m.Offset
-	}
-	return 0
-}
-
 type DescribeRuntimesResponse struct {
-	TotalCount           uint32     `protobuf:"varint,1,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	// total count of runtime
+	TotalCount uint32 `protobuf:"varint,1,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	// list of runtime
 	RuntimeSet           []*Runtime `protobuf:"bytes,2,rep,name=runtime_set,json=runtimeSet,proto3" json:"runtime_set,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
 	XXX_unrecognized     []byte     `json:"-"`
@@ -517,7 +641,9 @@ func (m *DescribeRuntimesResponse) GetRuntimeSet() []*Runtime {
 }
 
 type DescribeRuntimeDetailsResponse struct {
-	TotalCount           uint32           `protobuf:"varint,1,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	// total count of runtime
+	TotalCount uint32 `protobuf:"varint,1,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	// list of runtime detail info
 	RuntimeDetailSet     []*RuntimeDetail `protobuf:"bytes,2,rep,name=runtime_detail_set,json=runtimeDetailSet,proto3" json:"runtime_detail_set,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
@@ -564,11 +690,14 @@ func (m *DescribeRuntimeDetailsResponse) GetRuntimeDetailSet() []*RuntimeDetail 
 }
 
 type ModifyRuntimeRequest struct {
-	RuntimeId            *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
-	Name                 *wrappers.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description          *wrappers.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Labels               *wrappers.StringValue `protobuf:"bytes,4,opt,name=labels,proto3" json:"labels,omitempty"`
-	RuntimeCredential    *wrappers.StringValue `protobuf:"bytes,5,opt,name=runtime_credential,json=runtimeCredential,proto3" json:"runtime_credential,omitempty"`
+	// required, id of runtime to modify
+	RuntimeId *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
+	// runtime name
+	Name *wrappers.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// runtime description
+	Description *wrappers.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// runtime credential id
+	RuntimeCredentialId  *wrappers.StringValue `protobuf:"bytes,4,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -620,21 +749,15 @@ func (m *ModifyRuntimeRequest) GetDescription() *wrappers.StringValue {
 	return nil
 }
 
-func (m *ModifyRuntimeRequest) GetLabels() *wrappers.StringValue {
+func (m *ModifyRuntimeRequest) GetRuntimeCredentialId() *wrappers.StringValue {
 	if m != nil {
-		return m.Labels
-	}
-	return nil
-}
-
-func (m *ModifyRuntimeRequest) GetRuntimeCredential() *wrappers.StringValue {
-	if m != nil {
-		return m.RuntimeCredential
+		return m.RuntimeCredentialId
 	}
 	return nil
 }
 
 type ModifyRuntimeResponse struct {
+	// id of runtime modified
 	RuntimeId            *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
@@ -674,6 +797,7 @@ func (m *ModifyRuntimeResponse) GetRuntimeId() *wrappers.StringValue {
 }
 
 type DeleteRuntimesRequest struct {
+	// required, ids of runtime to delete
 	RuntimeId            []string `protobuf:"bytes,1,rep,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -713,6 +837,7 @@ func (m *DeleteRuntimesRequest) GetRuntimeId() []string {
 }
 
 type DeleteRuntimesResponse struct {
+	// ids of runtime deleted
 	RuntimeId            []string `protobuf:"bytes,1,rep,name=runtime_id,json=runtimeId,proto3" json:"runtime_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -751,10 +876,580 @@ func (m *DeleteRuntimesResponse) GetRuntimeId() []string {
 	return nil
 }
 
+type CreateRuntimeCredentialRequest struct {
+	// required, runtime url
+	RuntimeUrl *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_url,json=runtimeUrl,proto3" json:"runtime_url,omitempty"`
+	// required, runtime credential content, a json file
+	RuntimeCredentialContent *wrappers.StringValue `protobuf:"bytes,2,opt,name=runtime_credential_content,json=runtimeCredentialContent,proto3" json:"runtime_credential_content,omitempty"`
+	// required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]
+	Provider *wrappers.StringValue `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	// runtime credential name
+	Name *wrappers.StringValue `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	// runtime credential description
+	Description          *wrappers.StringValue `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *CreateRuntimeCredentialRequest) Reset()         { *m = CreateRuntimeCredentialRequest{} }
+func (m *CreateRuntimeCredentialRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateRuntimeCredentialRequest) ProtoMessage()    {}
+func (*CreateRuntimeCredentialRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{12}
+}
+
+func (m *CreateRuntimeCredentialRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateRuntimeCredentialRequest.Unmarshal(m, b)
+}
+func (m *CreateRuntimeCredentialRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateRuntimeCredentialRequest.Marshal(b, m, deterministic)
+}
+func (m *CreateRuntimeCredentialRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateRuntimeCredentialRequest.Merge(m, src)
+}
+func (m *CreateRuntimeCredentialRequest) XXX_Size() int {
+	return xxx_messageInfo_CreateRuntimeCredentialRequest.Size(m)
+}
+func (m *CreateRuntimeCredentialRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateRuntimeCredentialRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateRuntimeCredentialRequest proto.InternalMessageInfo
+
+func (m *CreateRuntimeCredentialRequest) GetRuntimeUrl() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeUrl
+	}
+	return nil
+}
+
+func (m *CreateRuntimeCredentialRequest) GetRuntimeCredentialContent() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeCredentialContent
+	}
+	return nil
+}
+
+func (m *CreateRuntimeCredentialRequest) GetProvider() *wrappers.StringValue {
+	if m != nil {
+		return m.Provider
+	}
+	return nil
+}
+
+func (m *CreateRuntimeCredentialRequest) GetName() *wrappers.StringValue {
+	if m != nil {
+		return m.Name
+	}
+	return nil
+}
+
+func (m *CreateRuntimeCredentialRequest) GetDescription() *wrappers.StringValue {
+	if m != nil {
+		return m.Description
+	}
+	return nil
+}
+
+type CreateRuntimeCredentialResponse struct {
+	// id of runtime credential created
+	RuntimeCredentialId  *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *CreateRuntimeCredentialResponse) Reset()         { *m = CreateRuntimeCredentialResponse{} }
+func (m *CreateRuntimeCredentialResponse) String() string { return proto.CompactTextString(m) }
+func (*CreateRuntimeCredentialResponse) ProtoMessage()    {}
+func (*CreateRuntimeCredentialResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{13}
+}
+
+func (m *CreateRuntimeCredentialResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateRuntimeCredentialResponse.Unmarshal(m, b)
+}
+func (m *CreateRuntimeCredentialResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateRuntimeCredentialResponse.Marshal(b, m, deterministic)
+}
+func (m *CreateRuntimeCredentialResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateRuntimeCredentialResponse.Merge(m, src)
+}
+func (m *CreateRuntimeCredentialResponse) XXX_Size() int {
+	return xxx_messageInfo_CreateRuntimeCredentialResponse.Size(m)
+}
+func (m *CreateRuntimeCredentialResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateRuntimeCredentialResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateRuntimeCredentialResponse proto.InternalMessageInfo
+
+func (m *CreateRuntimeCredentialResponse) GetRuntimeCredentialId() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeCredentialId
+	}
+	return nil
+}
+
+type ValidateRuntimeCredentialRequest struct {
+	// required, runtime url
+	RuntimeUrl *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_url,json=runtimeUrl,proto3" json:"runtime_url,omitempty"`
+	// required, runtime url
+	RuntimeCredentialContent *wrappers.StringValue `protobuf:"bytes,2,opt,name=runtime_credential_content,json=runtimeCredentialContent,proto3" json:"runtime_credential_content,omitempty"`
+	// required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]
+	Provider             *wrappers.StringValue `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *ValidateRuntimeCredentialRequest) Reset()         { *m = ValidateRuntimeCredentialRequest{} }
+func (m *ValidateRuntimeCredentialRequest) String() string { return proto.CompactTextString(m) }
+func (*ValidateRuntimeCredentialRequest) ProtoMessage()    {}
+func (*ValidateRuntimeCredentialRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{14}
+}
+
+func (m *ValidateRuntimeCredentialRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ValidateRuntimeCredentialRequest.Unmarshal(m, b)
+}
+func (m *ValidateRuntimeCredentialRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ValidateRuntimeCredentialRequest.Marshal(b, m, deterministic)
+}
+func (m *ValidateRuntimeCredentialRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidateRuntimeCredentialRequest.Merge(m, src)
+}
+func (m *ValidateRuntimeCredentialRequest) XXX_Size() int {
+	return xxx_messageInfo_ValidateRuntimeCredentialRequest.Size(m)
+}
+func (m *ValidateRuntimeCredentialRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidateRuntimeCredentialRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidateRuntimeCredentialRequest proto.InternalMessageInfo
+
+func (m *ValidateRuntimeCredentialRequest) GetRuntimeUrl() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeUrl
+	}
+	return nil
+}
+
+func (m *ValidateRuntimeCredentialRequest) GetRuntimeCredentialContent() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeCredentialContent
+	}
+	return nil
+}
+
+func (m *ValidateRuntimeCredentialRequest) GetProvider() *wrappers.StringValue {
+	if m != nil {
+		return m.Provider
+	}
+	return nil
+}
+
+type ValidateRuntimeCredentialResponse struct {
+	// validte ok or not
+	Ok                   *wrappers.BoolValue `protobuf:"bytes,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *ValidateRuntimeCredentialResponse) Reset()         { *m = ValidateRuntimeCredentialResponse{} }
+func (m *ValidateRuntimeCredentialResponse) String() string { return proto.CompactTextString(m) }
+func (*ValidateRuntimeCredentialResponse) ProtoMessage()    {}
+func (*ValidateRuntimeCredentialResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{15}
+}
+
+func (m *ValidateRuntimeCredentialResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ValidateRuntimeCredentialResponse.Unmarshal(m, b)
+}
+func (m *ValidateRuntimeCredentialResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ValidateRuntimeCredentialResponse.Marshal(b, m, deterministic)
+}
+func (m *ValidateRuntimeCredentialResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidateRuntimeCredentialResponse.Merge(m, src)
+}
+func (m *ValidateRuntimeCredentialResponse) XXX_Size() int {
+	return xxx_messageInfo_ValidateRuntimeCredentialResponse.Size(m)
+}
+func (m *ValidateRuntimeCredentialResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidateRuntimeCredentialResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidateRuntimeCredentialResponse proto.InternalMessageInfo
+
+func (m *ValidateRuntimeCredentialResponse) GetOk() *wrappers.BoolValue {
+	if m != nil {
+		return m.Ok
+	}
+	return nil
+}
+
+type DescribeRuntimeCredentialsRequest struct {
+	// query key
+	SearchWord *wrappers.StringValue `protobuf:"bytes,1,opt,name=search_word,json=searchWord,proto3" json:"search_word,omitempty"`
+	// sort key, order by sort_key, default create_time
+	SortKey *wrappers.StringValue `protobuf:"bytes,2,opt,name=sort_key,json=sortKey,proto3" json:"sort_key,omitempty"`
+	// value = 0 sort ASC, value = 1 sort DESC
+	Reverse *wrappers.BoolValue `protobuf:"bytes,3,opt,name=reverse,proto3" json:"reverse,omitempty"`
+	// data limit per page, default value 20, max value 200
+	Limit uint32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	// data offset, default 0
+	Offset uint32 `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
+	// select columns to display
+	DisplayColumns []string `protobuf:"bytes,6,rep,name=display_columns,json=displayColumns,proto3" json:"display_columns,omitempty"`
+	// runtime credential ids
+	RuntimeCredentialId []string `protobuf:"bytes,11,rep,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	// status eg.[active|deleted]
+	Status []string `protobuf:"bytes,12,rep,name=status,proto3" json:"status,omitempty"`
+	// runtime provider eg.[qingcloud|aliyun|aws|kubernetes]
+	Provider []string `protobuf:"bytes,13,rep,name=provider,proto3" json:"provider,omitempty"`
+	// owner
+	Owner                []string `protobuf:"bytes,14,rep,name=owner,proto3" json:"owner,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DescribeRuntimeCredentialsRequest) Reset()         { *m = DescribeRuntimeCredentialsRequest{} }
+func (m *DescribeRuntimeCredentialsRequest) String() string { return proto.CompactTextString(m) }
+func (*DescribeRuntimeCredentialsRequest) ProtoMessage()    {}
+func (*DescribeRuntimeCredentialsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{16}
+}
+
+func (m *DescribeRuntimeCredentialsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DescribeRuntimeCredentialsRequest.Unmarshal(m, b)
+}
+func (m *DescribeRuntimeCredentialsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DescribeRuntimeCredentialsRequest.Marshal(b, m, deterministic)
+}
+func (m *DescribeRuntimeCredentialsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DescribeRuntimeCredentialsRequest.Merge(m, src)
+}
+func (m *DescribeRuntimeCredentialsRequest) XXX_Size() int {
+	return xxx_messageInfo_DescribeRuntimeCredentialsRequest.Size(m)
+}
+func (m *DescribeRuntimeCredentialsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DescribeRuntimeCredentialsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DescribeRuntimeCredentialsRequest proto.InternalMessageInfo
+
+func (m *DescribeRuntimeCredentialsRequest) GetSearchWord() *wrappers.StringValue {
+	if m != nil {
+		return m.SearchWord
+	}
+	return nil
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetSortKey() *wrappers.StringValue {
+	if m != nil {
+		return m.SortKey
+	}
+	return nil
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetReverse() *wrappers.BoolValue {
+	if m != nil {
+		return m.Reverse
+	}
+	return nil
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetLimit() uint32 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetOffset() uint32 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetDisplayColumns() []string {
+	if m != nil {
+		return m.DisplayColumns
+	}
+	return nil
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetRuntimeCredentialId() []string {
+	if m != nil {
+		return m.RuntimeCredentialId
+	}
+	return nil
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetStatus() []string {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetProvider() []string {
+	if m != nil {
+		return m.Provider
+	}
+	return nil
+}
+
+func (m *DescribeRuntimeCredentialsRequest) GetOwner() []string {
+	if m != nil {
+		return m.Owner
+	}
+	return nil
+}
+
+type DescribeRuntimeCredentialsResponse struct {
+	// total count of runtime credential
+	TotalCount uint32 `protobuf:"varint,1,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	// list of runtime credential
+	RuntimeCredentialSet []*RuntimeCredential `protobuf:"bytes,2,rep,name=runtime_credential_set,json=runtimeCredentialSet,proto3" json:"runtime_credential_set,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *DescribeRuntimeCredentialsResponse) Reset()         { *m = DescribeRuntimeCredentialsResponse{} }
+func (m *DescribeRuntimeCredentialsResponse) String() string { return proto.CompactTextString(m) }
+func (*DescribeRuntimeCredentialsResponse) ProtoMessage()    {}
+func (*DescribeRuntimeCredentialsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{17}
+}
+
+func (m *DescribeRuntimeCredentialsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DescribeRuntimeCredentialsResponse.Unmarshal(m, b)
+}
+func (m *DescribeRuntimeCredentialsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DescribeRuntimeCredentialsResponse.Marshal(b, m, deterministic)
+}
+func (m *DescribeRuntimeCredentialsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DescribeRuntimeCredentialsResponse.Merge(m, src)
+}
+func (m *DescribeRuntimeCredentialsResponse) XXX_Size() int {
+	return xxx_messageInfo_DescribeRuntimeCredentialsResponse.Size(m)
+}
+func (m *DescribeRuntimeCredentialsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DescribeRuntimeCredentialsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DescribeRuntimeCredentialsResponse proto.InternalMessageInfo
+
+func (m *DescribeRuntimeCredentialsResponse) GetTotalCount() uint32 {
+	if m != nil {
+		return m.TotalCount
+	}
+	return 0
+}
+
+func (m *DescribeRuntimeCredentialsResponse) GetRuntimeCredentialSet() []*RuntimeCredential {
+	if m != nil {
+		return m.RuntimeCredentialSet
+	}
+	return nil
+}
+
+type ModifyRuntimeCredentialRequest struct {
+	// required, id of runtime credential to modify
+	RuntimeCredentialId *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	// runtime credential name
+	Name *wrappers.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// runtime credential description
+	Description *wrappers.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// runtime credential content, a json file
+	RuntimeCredentialContent *wrappers.StringValue `protobuf:"bytes,4,opt,name=runtime_credential_content,json=runtimeCredentialContent,proto3" json:"runtime_credential_content,omitempty"`
+	XXX_NoUnkeyedLiteral     struct{}              `json:"-"`
+	XXX_unrecognized         []byte                `json:"-"`
+	XXX_sizecache            int32                 `json:"-"`
+}
+
+func (m *ModifyRuntimeCredentialRequest) Reset()         { *m = ModifyRuntimeCredentialRequest{} }
+func (m *ModifyRuntimeCredentialRequest) String() string { return proto.CompactTextString(m) }
+func (*ModifyRuntimeCredentialRequest) ProtoMessage()    {}
+func (*ModifyRuntimeCredentialRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{18}
+}
+
+func (m *ModifyRuntimeCredentialRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ModifyRuntimeCredentialRequest.Unmarshal(m, b)
+}
+func (m *ModifyRuntimeCredentialRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ModifyRuntimeCredentialRequest.Marshal(b, m, deterministic)
+}
+func (m *ModifyRuntimeCredentialRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ModifyRuntimeCredentialRequest.Merge(m, src)
+}
+func (m *ModifyRuntimeCredentialRequest) XXX_Size() int {
+	return xxx_messageInfo_ModifyRuntimeCredentialRequest.Size(m)
+}
+func (m *ModifyRuntimeCredentialRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ModifyRuntimeCredentialRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ModifyRuntimeCredentialRequest proto.InternalMessageInfo
+
+func (m *ModifyRuntimeCredentialRequest) GetRuntimeCredentialId() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeCredentialId
+	}
+	return nil
+}
+
+func (m *ModifyRuntimeCredentialRequest) GetName() *wrappers.StringValue {
+	if m != nil {
+		return m.Name
+	}
+	return nil
+}
+
+func (m *ModifyRuntimeCredentialRequest) GetDescription() *wrappers.StringValue {
+	if m != nil {
+		return m.Description
+	}
+	return nil
+}
+
+func (m *ModifyRuntimeCredentialRequest) GetRuntimeCredentialContent() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeCredentialContent
+	}
+	return nil
+}
+
+type ModifyRuntimeCredentialResponse struct {
+	// id of runtime credential modified
+	RuntimeCredentialId  *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *ModifyRuntimeCredentialResponse) Reset()         { *m = ModifyRuntimeCredentialResponse{} }
+func (m *ModifyRuntimeCredentialResponse) String() string { return proto.CompactTextString(m) }
+func (*ModifyRuntimeCredentialResponse) ProtoMessage()    {}
+func (*ModifyRuntimeCredentialResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{19}
+}
+
+func (m *ModifyRuntimeCredentialResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ModifyRuntimeCredentialResponse.Unmarshal(m, b)
+}
+func (m *ModifyRuntimeCredentialResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ModifyRuntimeCredentialResponse.Marshal(b, m, deterministic)
+}
+func (m *ModifyRuntimeCredentialResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ModifyRuntimeCredentialResponse.Merge(m, src)
+}
+func (m *ModifyRuntimeCredentialResponse) XXX_Size() int {
+	return xxx_messageInfo_ModifyRuntimeCredentialResponse.Size(m)
+}
+func (m *ModifyRuntimeCredentialResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ModifyRuntimeCredentialResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ModifyRuntimeCredentialResponse proto.InternalMessageInfo
+
+func (m *ModifyRuntimeCredentialResponse) GetRuntimeCredentialId() *wrappers.StringValue {
+	if m != nil {
+		return m.RuntimeCredentialId
+	}
+	return nil
+}
+
+type DeleteRuntimeCredentialsRequest struct {
+	// required, ids of runtime credential to delete
+	RuntimeCredentialId  []string `protobuf:"bytes,1,rep,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteRuntimeCredentialsRequest) Reset()         { *m = DeleteRuntimeCredentialsRequest{} }
+func (m *DeleteRuntimeCredentialsRequest) String() string { return proto.CompactTextString(m) }
+func (*DeleteRuntimeCredentialsRequest) ProtoMessage()    {}
+func (*DeleteRuntimeCredentialsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{20}
+}
+
+func (m *DeleteRuntimeCredentialsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteRuntimeCredentialsRequest.Unmarshal(m, b)
+}
+func (m *DeleteRuntimeCredentialsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteRuntimeCredentialsRequest.Marshal(b, m, deterministic)
+}
+func (m *DeleteRuntimeCredentialsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteRuntimeCredentialsRequest.Merge(m, src)
+}
+func (m *DeleteRuntimeCredentialsRequest) XXX_Size() int {
+	return xxx_messageInfo_DeleteRuntimeCredentialsRequest.Size(m)
+}
+func (m *DeleteRuntimeCredentialsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteRuntimeCredentialsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteRuntimeCredentialsRequest proto.InternalMessageInfo
+
+func (m *DeleteRuntimeCredentialsRequest) GetRuntimeCredentialId() []string {
+	if m != nil {
+		return m.RuntimeCredentialId
+	}
+	return nil
+}
+
+type DeleteRuntimeCredentialsResponse struct {
+	// ids of runtime credential deleted
+	RuntimeCredentialId  []string `protobuf:"bytes,1,rep,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteRuntimeCredentialsResponse) Reset()         { *m = DeleteRuntimeCredentialsResponse{} }
+func (m *DeleteRuntimeCredentialsResponse) String() string { return proto.CompactTextString(m) }
+func (*DeleteRuntimeCredentialsResponse) ProtoMessage()    {}
+func (*DeleteRuntimeCredentialsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_86e2dd377c869464, []int{21}
+}
+
+func (m *DeleteRuntimeCredentialsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteRuntimeCredentialsResponse.Unmarshal(m, b)
+}
+func (m *DeleteRuntimeCredentialsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteRuntimeCredentialsResponse.Marshal(b, m, deterministic)
+}
+func (m *DeleteRuntimeCredentialsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteRuntimeCredentialsResponse.Merge(m, src)
+}
+func (m *DeleteRuntimeCredentialsResponse) XXX_Size() int {
+	return xxx_messageInfo_DeleteRuntimeCredentialsResponse.Size(m)
+}
+func (m *DeleteRuntimeCredentialsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteRuntimeCredentialsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteRuntimeCredentialsResponse proto.InternalMessageInfo
+
+func (m *DeleteRuntimeCredentialsResponse) GetRuntimeCredentialId() []string {
+	if m != nil {
+		return m.RuntimeCredentialId
+	}
+	return nil
+}
+
 type DescribeRuntimeProviderZonesRequest struct {
-	Provider             *wrappers.StringValue `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
-	RuntimeUrl           *wrappers.StringValue `protobuf:"bytes,2,opt,name=runtime_url,json=runtimeUrl,proto3" json:"runtime_url,omitempty"`
-	RuntimeCredential    *wrappers.StringValue `protobuf:"bytes,3,opt,name=runtime_credential,json=runtimeCredential,proto3" json:"runtime_credential,omitempty"`
+	// required, use runtime credential id to get run time provider zones
+	RuntimeCredentialId  *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
@@ -764,7 +1459,7 @@ func (m *DescribeRuntimeProviderZonesRequest) Reset()         { *m = DescribeRun
 func (m *DescribeRuntimeProviderZonesRequest) String() string { return proto.CompactTextString(m) }
 func (*DescribeRuntimeProviderZonesRequest) ProtoMessage()    {}
 func (*DescribeRuntimeProviderZonesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_86e2dd377c869464, []int{12}
+	return fileDescriptor_86e2dd377c869464, []int{22}
 }
 
 func (m *DescribeRuntimeProviderZonesRequest) XXX_Unmarshal(b []byte) error {
@@ -785,40 +1480,28 @@ func (m *DescribeRuntimeProviderZonesRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DescribeRuntimeProviderZonesRequest proto.InternalMessageInfo
 
-func (m *DescribeRuntimeProviderZonesRequest) GetProvider() *wrappers.StringValue {
+func (m *DescribeRuntimeProviderZonesRequest) GetRuntimeCredentialId() *wrappers.StringValue {
 	if m != nil {
-		return m.Provider
-	}
-	return nil
-}
-
-func (m *DescribeRuntimeProviderZonesRequest) GetRuntimeUrl() *wrappers.StringValue {
-	if m != nil {
-		return m.RuntimeUrl
-	}
-	return nil
-}
-
-func (m *DescribeRuntimeProviderZonesRequest) GetRuntimeCredential() *wrappers.StringValue {
-	if m != nil {
-		return m.RuntimeCredential
+		return m.RuntimeCredentialId
 	}
 	return nil
 }
 
 type DescribeRuntimeProviderZonesResponse struct {
-	Provider             *wrappers.StringValue `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
-	Zone                 []string              `protobuf:"bytes,2,rep,name=zone,proto3" json:"zone,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	// runtime credential id
+	RuntimeCredentialId *wrappers.StringValue `protobuf:"bytes,1,opt,name=runtime_credential_id,json=runtimeCredentialId,proto3" json:"runtime_credential_id,omitempty"`
+	// list of zone
+	Zone                 []string `protobuf:"bytes,2,rep,name=zone,proto3" json:"zone,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *DescribeRuntimeProviderZonesResponse) Reset()         { *m = DescribeRuntimeProviderZonesResponse{} }
 func (m *DescribeRuntimeProviderZonesResponse) String() string { return proto.CompactTextString(m) }
 func (*DescribeRuntimeProviderZonesResponse) ProtoMessage()    {}
 func (*DescribeRuntimeProviderZonesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_86e2dd377c869464, []int{13}
+	return fileDescriptor_86e2dd377c869464, []int{23}
 }
 
 func (m *DescribeRuntimeProviderZonesResponse) XXX_Unmarshal(b []byte) error {
@@ -839,9 +1522,9 @@ func (m *DescribeRuntimeProviderZonesResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DescribeRuntimeProviderZonesResponse proto.InternalMessageInfo
 
-func (m *DescribeRuntimeProviderZonesResponse) GetProvider() *wrappers.StringValue {
+func (m *DescribeRuntimeProviderZonesResponse) GetRuntimeCredentialId() *wrappers.StringValue {
 	if m != nil {
-		return m.Provider
+		return m.RuntimeCredentialId
 	}
 	return nil
 }
@@ -863,7 +1546,7 @@ func (m *GetRuntimeStatisticsRequest) Reset()         { *m = GetRuntimeStatistic
 func (m *GetRuntimeStatisticsRequest) String() string { return proto.CompactTextString(m) }
 func (*GetRuntimeStatisticsRequest) ProtoMessage()    {}
 func (*GetRuntimeStatisticsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_86e2dd377c869464, []int{14}
+	return fileDescriptor_86e2dd377c869464, []int{24}
 }
 
 func (m *GetRuntimeStatisticsRequest) XXX_Unmarshal(b []byte) error {
@@ -885,20 +1568,24 @@ func (m *GetRuntimeStatisticsRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_GetRuntimeStatisticsRequest proto.InternalMessageInfo
 
 type GetRuntimeStatisticsResponse struct {
-	LastTwoWeekCreated   map[string]uint32 `protobuf:"bytes,1,rep,name=last_two_week_created,json=lastTwoWeekCreated,proto3" json:"last_two_week_created,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
-	TopTenProviders      map[string]uint32 `protobuf:"bytes,2,rep,name=top_ten_providers,json=topTenProviders,proto3" json:"top_ten_providers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
-	RuntimeCount         uint32            `protobuf:"varint,3,opt,name=runtime_count,json=runtimeCount,proto3" json:"runtime_count,omitempty"`
-	ProviderCount        uint32            `protobuf:"varint,4,opt,name=provider_count,json=providerCount,proto3" json:"provider_count,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	// runtime create time range map to runtime count, max length is 14
+	LastTwoWeekCreated map[string]uint32 `protobuf:"bytes,1,rep,name=last_two_week_created,json=lastTwoWeekCreated,proto3" json:"last_two_week_created,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	// provider id map to runtime count, max length is 10
+	TopTenProviders map[string]uint32 `protobuf:"bytes,2,rep,name=top_ten_providers,json=topTenProviders,proto3" json:"top_ten_providers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	// total count of runtime
+	RuntimeCount uint32 `protobuf:"varint,3,opt,name=runtime_count,json=runtimeCount,proto3" json:"runtime_count,omitempty"`
+	// total count of provider
+	ProviderCount        uint32   `protobuf:"varint,4,opt,name=provider_count,json=providerCount,proto3" json:"provider_count,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *GetRuntimeStatisticsResponse) Reset()         { *m = GetRuntimeStatisticsResponse{} }
 func (m *GetRuntimeStatisticsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetRuntimeStatisticsResponse) ProtoMessage()    {}
 func (*GetRuntimeStatisticsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_86e2dd377c869464, []int{15}
+	return fileDescriptor_86e2dd377c869464, []int{25}
 }
 
 func (m *GetRuntimeStatisticsResponse) XXX_Unmarshal(b []byte) error {
@@ -948,7 +1635,7 @@ func (m *GetRuntimeStatisticsResponse) GetProviderCount() uint32 {
 }
 
 func init() {
-	proto.RegisterType((*RuntimeLabel)(nil), "openpitrix.RuntimeLabel")
+	proto.RegisterType((*RuntimeCredential)(nil), "openpitrix.RuntimeCredential")
 	proto.RegisterType((*Runtime)(nil), "openpitrix.Runtime")
 	proto.RegisterType((*RuntimeDetail)(nil), "openpitrix.RuntimeDetail")
 	proto.RegisterType((*CreateRuntimeRequest)(nil), "openpitrix.CreateRuntimeRequest")
@@ -960,6 +1647,16 @@ func init() {
 	proto.RegisterType((*ModifyRuntimeResponse)(nil), "openpitrix.ModifyRuntimeResponse")
 	proto.RegisterType((*DeleteRuntimesRequest)(nil), "openpitrix.DeleteRuntimesRequest")
 	proto.RegisterType((*DeleteRuntimesResponse)(nil), "openpitrix.DeleteRuntimesResponse")
+	proto.RegisterType((*CreateRuntimeCredentialRequest)(nil), "openpitrix.CreateRuntimeCredentialRequest")
+	proto.RegisterType((*CreateRuntimeCredentialResponse)(nil), "openpitrix.CreateRuntimeCredentialResponse")
+	proto.RegisterType((*ValidateRuntimeCredentialRequest)(nil), "openpitrix.ValidateRuntimeCredentialRequest")
+	proto.RegisterType((*ValidateRuntimeCredentialResponse)(nil), "openpitrix.ValidateRuntimeCredentialResponse")
+	proto.RegisterType((*DescribeRuntimeCredentialsRequest)(nil), "openpitrix.DescribeRuntimeCredentialsRequest")
+	proto.RegisterType((*DescribeRuntimeCredentialsResponse)(nil), "openpitrix.DescribeRuntimeCredentialsResponse")
+	proto.RegisterType((*ModifyRuntimeCredentialRequest)(nil), "openpitrix.ModifyRuntimeCredentialRequest")
+	proto.RegisterType((*ModifyRuntimeCredentialResponse)(nil), "openpitrix.ModifyRuntimeCredentialResponse")
+	proto.RegisterType((*DeleteRuntimeCredentialsRequest)(nil), "openpitrix.DeleteRuntimeCredentialsRequest")
+	proto.RegisterType((*DeleteRuntimeCredentialsResponse)(nil), "openpitrix.DeleteRuntimeCredentialsResponse")
 	proto.RegisterType((*DescribeRuntimeProviderZonesRequest)(nil), "openpitrix.DescribeRuntimeProviderZonesRequest")
 	proto.RegisterType((*DescribeRuntimeProviderZonesResponse)(nil), "openpitrix.DescribeRuntimeProviderZonesResponse")
 	proto.RegisterType((*GetRuntimeStatisticsRequest)(nil), "openpitrix.GetRuntimeStatisticsRequest")
@@ -971,83 +1668,125 @@ func init() {
 func init() { proto.RegisterFile("runtime.proto", fileDescriptor_86e2dd377c869464) }
 
 var fileDescriptor_86e2dd377c869464 = []byte{
-	// 1216 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xdc, 0x57, 0x4f, 0x6f, 0x1b, 0x45,
-	0x14, 0xd7, 0xda, 0xce, 0xbf, 0xe7, 0x38, 0x4d, 0x06, 0x27, 0xd9, 0x9a, 0xb4, 0x71, 0x36, 0x45,
-	0x84, 0x40, 0xec, 0x60, 0x2a, 0x28, 0xa9, 0x5a, 0x91, 0x26, 0x55, 0x85, 0xda, 0x4a, 0x68, 0x63,
-	0xa8, 0xd4, 0x8b, 0xb5, 0xf1, 0x4e, 0xcc, 0x2a, 0x9b, 0x9d, 0xed, 0xce, 0x38, 0x26, 0x9c, 0x10,
-	0xe2, 0x80, 0xe0, 0x16, 0x3e, 0x02, 0xe2, 0x2b, 0x70, 0xe7, 0x80, 0xc4, 0x1d, 0xf1, 0x0d, 0xb8,
-	0xf1, 0x09, 0x38, 0x81, 0x76, 0xfe, 0xd8, 0xbb, 0xeb, 0x8d, 0xb3, 0x71, 0xb9, 0xd0, 0x93, 0x77,
-	0xe7, 0xfd, 0xde, 0xbc, 0xf7, 0x7e, 0xef, 0xcd, 0x6f, 0xd6, 0x50, 0x0a, 0xba, 0x1e, 0x73, 0x4e,
-	0x70, 0xcd, 0x0f, 0x08, 0x23, 0x08, 0x88, 0x8f, 0x3d, 0xdf, 0x61, 0x81, 0xf3, 0x45, 0xe5, 0x66,
-	0x87, 0x90, 0x8e, 0x8b, 0xeb, 0xdc, 0x72, 0xd8, 0x3d, 0xaa, 0xf7, 0x02, 0xcb, 0xf7, 0x71, 0x40,
-	0x05, 0xb6, 0xb2, 0x9a, 0xb4, 0x87, 0xfb, 0x50, 0x66, 0x9d, 0xf8, 0x12, 0xb0, 0x22, 0x01, 0x96,
-	0xef, 0xd4, 0x2d, 0xcf, 0x23, 0xcc, 0x62, 0x0e, 0xf1, 0x94, 0xfb, 0x3b, 0xfc, 0xa7, 0xbd, 0xd5,
-	0xc1, 0xde, 0x16, 0xed, 0x59, 0x9d, 0x0e, 0x0e, 0xea, 0xc4, 0xe7, 0x88, 0x61, 0xb4, 0xf1, 0xab,
-	0x06, 0xb3, 0xa6, 0x48, 0xf5, 0x89, 0x75, 0x88, 0x5d, 0xf4, 0x21, 0xcc, 0xb8, 0xe1, 0x43, 0xeb,
-	0x18, 0x9f, 0xe9, 0x5a, 0x55, 0xdb, 0x28, 0x36, 0x56, 0x6a, 0x22, 0x60, 0x4d, 0x65, 0x54, 0x3b,
-	0x60, 0x81, 0xe3, 0x75, 0x3e, 0xb3, 0xdc, 0x2e, 0x36, 0xa7, 0x39, 0xfc, 0x31, 0x3e, 0x43, 0xf7,
-	0xa0, 0x28, 0x5c, 0x4f, 0x43, 0x83, 0x9e, 0xcb, 0xe0, 0x0c, 0xdc, 0x81, 0x3f, 0xa3, 0xbb, 0x50,
-	0x6c, 0x07, 0xd8, 0x62, 0xb8, 0x15, 0x66, 0xa3, 0xe7, 0xb9, 0x7b, 0x65, 0xc8, 0xbd, 0xa9, 0xd8,
-	0x30, 0x41, 0xc0, 0xc3, 0x05, 0xe3, 0xef, 0x02, 0x4c, 0xc9, 0x3a, 0xd0, 0x5d, 0x00, 0xc9, 0x7e,
-	0xcb, 0xb1, 0x33, 0xd5, 0x30, 0x23, 0xf1, 0x1f, 0xdb, 0x68, 0x1b, 0x0a, 0x9e, 0x75, 0x92, 0x2d,
-	0x7b, 0x8e, 0x44, 0xf7, 0xa1, 0x68, 0x63, 0xda, 0x0e, 0x1c, 0x4e, 0xb2, 0xcc, 0x7b, 0xb4, 0x63,
-	0xd4, 0x01, 0xdd, 0x81, 0x69, 0x3f, 0x20, 0xa7, 0x8e, 0x8d, 0x03, 0xbd, 0x90, 0x85, 0x70, 0x85,
-	0x0e, 0x09, 0x57, 0x85, 0x76, 0x03, 0x57, 0x9f, 0xc8, 0x42, 0xb8, 0x74, 0xf8, 0x34, 0x70, 0xc3,
-	0x52, 0xbf, 0x24, 0x1e, 0xd6, 0x27, 0xb3, 0x94, 0x1a, 0x22, 0xd1, 0x36, 0x4c, 0xf2, 0x86, 0x51,
-	0x7d, 0xaa, 0x9a, 0xdf, 0x28, 0x36, 0xf4, 0xda, 0x60, 0xae, 0x6b, 0xd1, 0x31, 0x32, 0x25, 0x0e,
-	0x35, 0x60, 0x82, 0xf4, 0x3c, 0x1c, 0xe8, 0xd3, 0x19, 0x82, 0x08, 0x28, 0xba, 0x0d, 0x93, 0x94,
-	0x59, 0xac, 0x4b, 0xf5, 0x99, 0x0c, 0x4e, 0x12, 0x9b, 0x1c, 0x1f, 0xb8, 0xca, 0xf8, 0x84, 0xce,
-	0x62, 0x1b, 0xe1, 0x5c, 0xbc, 0xdc, 0x59, 0xc0, 0xf9, 0xec, 0x7d, 0xaf, 0x41, 0x49, 0x16, 0xbf,
-	0x8f, 0x99, 0xe5, 0xb8, 0x68, 0x0b, 0xa6, 0x24, 0xcf, 0x72, 0xfc, 0x5e, 0x4b, 0x21, 0xca, 0x54,
-	0x18, 0xf4, 0x18, 0x90, 0xea, 0x63, 0x3b, 0xc0, 0x36, 0xf6, 0x98, 0x63, 0xb9, 0x99, 0x26, 0x70,
-	0x41, 0xfa, 0xed, 0xf5, 0xdd, 0x8c, 0x9f, 0xf3, 0x50, 0xde, 0xe3, 0x95, 0xa9, 0x38, 0xf8, 0x45,
-	0x17, 0x53, 0xd6, 0x9f, 0x6c, 0x6d, 0xdc, 0xc9, 0xce, 0xbd, 0xc2, 0x93, 0x9d, 0xde, 0x82, 0xa9,
-	0xb1, 0x5a, 0x10, 0x0e, 0xb0, 0x3c, 0x26, 0x59, 0xa6, 0x5e, 0x62, 0x8d, 0x26, 0x2c, 0x26, 0xfa,
-	0x46, 0x7d, 0xe2, 0xd1, 0x97, 0xd3, 0x33, 0xe3, 0xc7, 0x1c, 0x2c, 0xef, 0xf3, 0x9e, 0x1c, 0xaa,
-	0x8d, 0xa9, 0x9a, 0x88, 0x1b, 0x89, 0x8d, 0xf3, 0x1b, 0x33, 0x51, 0x29, 0x5c, 0xea, 0x9f, 0xc3,
-	0x1c, 0x37, 0xa9, 0x93, 0x56, 0x89, 0xb4, 0x35, 0xcf, 0x2d, 0xb1, 0xc6, 0x51, 0x6c, 0x05, 0xed,
-	0xcf, 0x5b, 0x3d, 0x12, 0xd8, 0x99, 0xba, 0x0e, 0xc2, 0xe1, 0x19, 0x09, 0xec, 0x50, 0x2e, 0x38,
-	0x1b, 0x99, 0x3a, 0x2e, 0xa0, 0xa8, 0xac, 0x24, 0x66, 0x92, 0xe7, 0x22, 0x45, 0xa4, 0x0c, 0x13,
-	0xae, 0x73, 0xe2, 0x30, 0xde, 0xc3, 0x92, 0x29, 0x5e, 0xc2, 0x92, 0xc8, 0xd1, 0x11, 0xc5, 0x8c,
-	0x77, 0xa6, 0x64, 0xca, 0x37, 0xe3, 0x05, 0xe8, 0xc3, 0x24, 0x49, 0xfa, 0x57, 0xa1, 0xc8, 0x08,
-	0xb3, 0xdc, 0x56, 0x9b, 0x74, 0x3d, 0xc6, 0xf9, 0x2f, 0x99, 0xc0, 0x97, 0xf6, 0xc2, 0x15, 0x74,
-	0x7b, 0x30, 0xac, 0xe1, 0xce, 0x39, 0x2e, 0x8d, 0xa9, 0x27, 0x5e, 0xd1, 0x7d, 0x80, 0x99, 0xf1,
-	0x9d, 0x06, 0x37, 0x13, 0x31, 0x85, 0x7a, 0x5c, 0x21, 0xf2, 0xa3, 0xc1, 0xd4, 0xda, 0xdc, 0x37,
-	0x92, 0xc0, 0xf5, 0x94, 0x04, 0x44, 0x00, 0x73, 0x3e, 0x88, 0xbe, 0x86, 0xc9, 0xfc, 0x96, 0x83,
-	0xf2, 0x53, 0x62, 0x3b, 0x47, 0x67, 0x09, 0xd1, 0xf8, 0x9f, 0xdd, 0xa5, 0x83, 0x93, 0x57, 0xc8,
-	0x7e, 0xf2, 0x2e, 0x38, 0xfc, 0x13, 0xe3, 0xe9, 0x6f, 0x13, 0x16, 0x13, 0x4c, 0xfe, 0x17, 0xc7,
-	0xf8, 0x7d, 0x58, 0xdc, 0xc7, 0x2e, 0x66, 0x57, 0x3c, 0xc3, 0xc6, 0x07, 0xb0, 0x94, 0xf4, 0x93,
-	0xe9, 0x5c, 0xe2, 0xf8, 0x97, 0x06, 0xeb, 0x89, 0xf1, 0xfc, 0x44, 0x1e, 0xf2, 0xe7, 0xc4, 0x1b,
-	0xc4, 0x8f, 0x6a, 0xbc, 0xf6, 0x32, 0x1a, 0x9f, 0xbb, 0xa2, 0xc6, 0xa7, 0x37, 0x2d, 0x3f, 0x5e,
-	0xd3, 0x18, 0xdc, 0x1a, 0x5d, 0xac, 0x24, 0x6d, 0xfc, 0x6a, 0x91, 0xbc, 0x92, 0x84, 0x94, 0xf2,
-	0x67, 0xe3, 0x06, 0xbc, 0xfe, 0x08, 0x33, 0x19, 0xf0, 0x20, 0xfc, 0x30, 0xa7, 0xcc, 0x69, 0x2b,
-	0x6a, 0x8d, 0x3f, 0xf2, 0xb0, 0x92, 0x6e, 0x97, 0xd9, 0x50, 0x58, 0x74, 0x2d, 0xca, 0x5a, 0xac,
-	0x47, 0x5a, 0x3d, 0x8c, 0x8f, 0x5b, 0xe2, 0x8b, 0x46, 0x74, 0xb3, 0xd8, 0xf8, 0x28, 0xaa, 0x00,
-	0xa3, 0x36, 0xaa, 0x3d, 0xb1, 0x28, 0x6b, 0xf6, 0xc8, 0x33, 0x8c, 0x8f, 0xc5, 0x15, 0x64, 0x3f,
-	0xf4, 0x58, 0x70, 0x66, 0x22, 0x77, 0xc8, 0x80, 0x1c, 0x58, 0x60, 0xc4, 0x6f, 0x31, 0xec, 0xb5,
-	0x54, 0x71, 0x54, 0x4a, 0xce, 0xbd, 0xcc, 0x01, 0x9b, 0xc4, 0x6f, 0x62, 0x4f, 0x71, 0x4c, 0x45,
-	0xb4, 0x6b, 0x2c, 0xbe, 0x8a, 0xd6, 0xfb, 0x7f, 0xa3, 0xa4, 0x02, 0xe6, 0xb9, 0x02, 0xce, 0xaa,
-	0xfe, 0x71, 0x0d, 0x7c, 0x03, 0xe6, 0x54, 0x1e, 0x12, 0x55, 0xe0, 0xa8, 0x92, 0x5a, 0xe5, 0xb0,
-	0xca, 0x43, 0x58, 0xbe, 0xa0, 0x4a, 0x34, 0x0f, 0x79, 0xf5, 0x67, 0x67, 0xc6, 0x0c, 0x1f, 0xc3,
-	0xcb, 0x63, 0xf0, 0x1f, 0xa6, 0x64, 0x8a, 0x97, 0x9d, 0xdc, 0x1d, 0xad, 0xf2, 0x00, 0xca, 0x69,
-	0xb9, 0x5f, 0x65, 0x8f, 0xc6, 0x3f, 0x53, 0x30, 0x27, 0xa9, 0x79, 0x6a, 0x79, 0x56, 0x07, 0x07,
-	0xe8, 0x2b, 0x0d, 0x4a, 0xb1, 0xcb, 0x1f, 0x55, 0xa3, 0x5c, 0xa6, 0x7d, 0xcf, 0x55, 0xd6, 0x46,
-	0x20, 0x04, 0xcd, 0xc6, 0xe6, 0xf9, 0xee, 0x3c, 0x9a, 0x13, 0x53, 0x51, 0x95, 0xac, 0x7d, 0xfd,
-	0xfb, 0x9f, 0x3f, 0xe4, 0x16, 0x8c, 0xd9, 0xfa, 0xe9, 0xbb, 0x75, 0xb9, 0x44, 0x77, 0xb4, 0x4d,
-	0xe4, 0x84, 0x4a, 0x91, 0x76, 0x1d, 0xa1, 0xf5, 0x68, 0xa0, 0x0b, 0xbe, 0x25, 0x2a, 0x9b, 0x23,
-	0x40, 0xc9, 0x7b, 0xed, 0x5b, 0x0d, 0xe6, 0x93, 0xfb, 0x64, 0x8b, 0x72, 0x6b, 0x34, 0x48, 0x96,
-	0xfd, 0xd6, 0xf9, 0x2e, 0x42, 0xf3, 0xb6, 0x34, 0xc7, 0x0a, 0x9f, 0x43, 0xb1, 0xc2, 0x39, 0xf1,
-	0x31, 0xb9, 0x8e, 0x13, 0x9f, 0x76, 0x27, 0xc6, 0x89, 0x4f, 0xd5, 0x7a, 0x49, 0xfc, 0x09, 0xb7,
-	0xc5, 0x89, 0x6f, 0x0c, 0x11, 0xff, 0x8d, 0x06, 0x73, 0x71, 0x8d, 0x46, 0x6b, 0xf1, 0x32, 0x53,
-	0x74, 0xbf, 0x62, 0x8c, 0x82, 0xc8, 0x2c, 0xde, 0x3e, 0xdf, 0x5d, 0x40, 0xd7, 0x6c, 0x6e, 0x54,
-	0x59, 0x50, 0x91, 0xc6, 0xe6, 0x50, 0x1a, 0xbf, 0x68, 0xb0, 0x32, 0x4a, 0x03, 0x51, 0x7d, 0x04,
-	0xf7, 0x69, 0x57, 0x43, 0x65, 0x3b, 0xbb, 0x83, 0x4c, 0xf8, 0xfe, 0xf9, 0xee, 0x1a, 0x5a, 0x4d,
-	0x36, 0xae, 0xaa, 0x4e, 0x72, 0x35, 0x54, 0x4d, 0x51, 0x40, 0x19, 0xa1, 0x68, 0x01, 0x75, 0x6e,
-	0x41, 0x3f, 0x69, 0x50, 0x4e, 0xd3, 0x1d, 0xf4, 0xe6, 0xe5, 0xca, 0x24, 0x72, 0xde, 0xc8, 0x2a,
-	0x61, 0xc6, 0xce, 0xf9, 0xae, 0x8e, 0x96, 0x3a, 0x98, 0xf5, 0xd3, 0xa4, 0x7d, 0x10, 0x4f, 0xf1,
-	0x3a, 0x5a, 0x8e, 0xa5, 0x38, 0x30, 0x3f, 0x28, 0x3c, 0xcf, 0xf9, 0x87, 0x87, 0x93, 0xfc, 0xca,
-	0x78, 0xef, 0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x6f, 0x9a, 0x26, 0xa3, 0x2c, 0x12, 0x00, 0x00,
+	// 1881 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x58, 0xcd, 0x6f, 0x23, 0x49,
+	0x15, 0x57, 0xb7, 0xe3, 0x64, 0xf2, 0x1c, 0x67, 0x92, 0x5a, 0x27, 0xe9, 0xf4, 0xe4, 0xa3, 0xd3,
+	0x59, 0xd8, 0x90, 0x71, 0xec, 0xc1, 0x8c, 0x76, 0x97, 0x5d, 0x05, 0xe1, 0x24, 0xab, 0x01, 0x31,
+	0x23, 0x46, 0x4e, 0x76, 0x56, 0x9a, 0x8b, 0xd5, 0xb1, 0xcb, 0x4e, 0x2b, 0x9d, 0x6e, 0x4f, 0x77,
+	0x39, 0x26, 0x1c, 0xd0, 0x08, 0x90, 0x10, 0x30, 0x17, 0x8c, 0x10, 0x88, 0x03, 0x47, 0xc4, 0x09,
+	0x71, 0x41, 0x5c, 0x90, 0x40, 0x48, 0x8c, 0xc4, 0x19, 0xf1, 0x1f, 0x20, 0x71, 0xe0, 0x0f, 0xe0,
+	0x08, 0xea, 0xaa, 0xea, 0xb8, 0xdb, 0xfd, 0xe1, 0x4e, 0xe2, 0x19, 0x04, 0x3b, 0xa7, 0xc4, 0x5d,
+	0xef, 0x55, 0xbd, 0xaf, 0xdf, 0xaf, 0xde, 0x2b, 0xc8, 0xdb, 0x5d, 0x93, 0xe8, 0x67, 0xb8, 0xd4,
+	0xb1, 0x2d, 0x62, 0x21, 0xb0, 0x3a, 0xd8, 0xec, 0xe8, 0xc4, 0xd6, 0xbf, 0x21, 0xaf, 0xb5, 0x2d,
+	0xab, 0x6d, 0xe0, 0x32, 0x5d, 0x39, 0xee, 0xb6, 0xca, 0x3d, 0x5b, 0xeb, 0x74, 0xb0, 0xed, 0x30,
+	0x59, 0x79, 0x7d, 0x78, 0xdd, 0xdd, 0xc7, 0x21, 0xda, 0x59, 0x87, 0x0b, 0xac, 0x70, 0x01, 0xad,
+	0xa3, 0x97, 0x35, 0xd3, 0xb4, 0x88, 0x46, 0x74, 0xcb, 0xf4, 0xd4, 0x8b, 0xf4, 0x4f, 0x63, 0xa7,
+	0x8d, 0xcd, 0x1d, 0xa7, 0xa7, 0xb5, 0xdb, 0xd8, 0x2e, 0x5b, 0x1d, 0x2a, 0x11, 0x96, 0x56, 0xff,
+	0x9d, 0x85, 0xf9, 0x1a, 0x33, 0x75, 0xdf, 0xc6, 0x4d, 0x6c, 0x12, 0x5d, 0x33, 0xd0, 0x63, 0x58,
+	0xe0, 0xf6, 0xd7, 0x1b, 0x97, 0x5f, 0xeb, 0x7a, 0x53, 0x12, 0x14, 0x61, 0x2b, 0x57, 0x59, 0x29,
+	0x31, 0x0b, 0x4a, 0x9e, 0x89, 0xa5, 0x43, 0x62, 0xeb, 0x66, 0xfb, 0x89, 0x66, 0x74, 0x71, 0xed,
+	0x2d, 0x7b, 0x78, 0xbf, 0xaf, 0x36, 0xd1, 0x3d, 0x98, 0x30, 0xb5, 0x33, 0x2c, 0x89, 0x29, 0x36,
+	0xa0, 0x92, 0xe8, 0x4b, 0x90, 0x6b, 0x62, 0xa7, 0x61, 0xeb, 0xd4, 0x76, 0x29, 0x93, 0x42, 0xd1,
+	0xaf, 0x80, 0x76, 0x21, 0xe7, 0xf9, 0xd0, 0xb5, 0x0d, 0x69, 0x22, 0x85, 0x3e, 0x70, 0x85, 0x8f,
+	0x6d, 0x03, 0x3d, 0x05, 0x39, 0x22, 0x04, 0x0d, 0xcb, 0x24, 0xd8, 0x24, 0x52, 0x36, 0xc5, 0x6e,
+	0x52, 0x28, 0x0e, 0xfb, 0x4c, 0x1b, 0x7d, 0x08, 0x60, 0xf5, 0x4c, 0x6c, 0xd7, 0x3b, 0x1a, 0x39,
+	0x91, 0x26, 0x53, 0xec, 0x35, 0x4d, 0xe5, 0x1f, 0x6b, 0xe4, 0x04, 0xbd, 0x0f, 0xb7, 0x3a, 0xb6,
+	0x75, 0xae, 0x37, 0xb1, 0x2d, 0x4d, 0xa5, 0x50, 0xbd, 0x94, 0x46, 0xf7, 0x61, 0xd2, 0x21, 0x1a,
+	0xe9, 0x3a, 0xd2, 0xad, 0x14, 0x7a, 0x5c, 0x16, 0x7d, 0x08, 0xb9, 0x86, 0x8d, 0x35, 0x82, 0xeb,
+	0xae, 0x33, 0xd2, 0x34, 0x55, 0x95, 0x43, 0xaa, 0x47, 0x5e, 0x91, 0xd6, 0x80, 0x89, 0xbb, 0x1f,
+	0x5c, 0x65, 0xb6, 0x0d, 0x53, 0x86, 0xd1, 0xca, 0x4c, 0x9c, 0x2a, 0xdf, 0x83, 0x6c, 0x13, 0x1f,
+	0x77, 0xdb, 0x52, 0x2e, 0x46, 0x6d, 0xcf, 0xb2, 0x0c, 0x66, 0x2c, 0x13, 0x44, 0x15, 0xc8, 0xd2,
+	0x40, 0x49, 0x33, 0x29, 0x1c, 0x64, 0xa2, 0xea, 0x5f, 0xb2, 0x30, 0xc5, 0x11, 0xe0, 0x26, 0xc6,
+	0x4b, 0x7a, 0xca, 0x62, 0x9f, 0xe6, 0xf2, 0xff, 0x95, 0x12, 0xf7, 0x97, 0xc2, 0xc4, 0x95, 0x4a,
+	0x21, 0x16, 0xe0, 0xd9, 0x1b, 0x00, 0xfc, 0x9b, 0x96, 0x89, 0x53, 0x55, 0x33, 0x95, 0x1c, 0x42,
+	0xc1, 0xd4, 0xd5, 0x50, 0xf0, 0xa6, 0x96, 0xa3, 0x6a, 0xf9, 0x85, 0x00, 0x79, 0x5e, 0xcb, 0x07,
+	0x98, 0x68, 0xba, 0x81, 0x76, 0x60, 0x8a, 0x67, 0x8b, 0x97, 0xf3, 0x5b, 0xa5, 0xc1, 0x55, 0x54,
+	0xe2, 0xb2, 0x35, 0x4f, 0x06, 0x3d, 0x04, 0x14, 0xae, 0x0b, 0x5e, 0xd1, 0xab, 0x11, 0x9a, 0x83,
+	0x12, 0xa8, 0xcd, 0x87, 0xaa, 0x42, 0x7d, 0x29, 0x42, 0x61, 0x9f, 0x06, 0xd0, 0x3b, 0x08, 0x3f,
+	0xeb, 0x62, 0x87, 0x5c, 0x42, 0x45, 0xb8, 0x2e, 0x54, 0xc4, 0x9b, 0x40, 0x25, 0x33, 0x1e, 0xa8,
+	0x4c, 0xdc, 0x14, 0x2a, 0xd9, 0xb4, 0x50, 0x51, 0x8f, 0x60, 0x61, 0x28, 0x8e, 0x4e, 0xc7, 0x32,
+	0x9d, 0x9b, 0x11, 0x96, 0xfa, 0xbd, 0x0c, 0x2c, 0x1d, 0xd0, 0x18, 0x1d, 0x7b, 0x1b, 0x3b, 0x5e,
+	0x86, 0x76, 0x21, 0xe7, 0x60, 0xcd, 0x6e, 0x9c, 0xd4, 0x7b, 0x96, 0x9d, 0x6e, 0x67, 0x60, 0x0a,
+	0x9f, 0x58, 0x76, 0x13, 0xbd, 0x07, 0xb7, 0x1c, 0xcb, 0x26, 0xf5, 0x53, 0x7c, 0x91, 0x2a, 0x57,
+	0x53, 0xae, 0xf4, 0xd7, 0xf0, 0x05, 0xba, 0x0f, 0x53, 0x36, 0x3e, 0xc7, 0xb6, 0x83, 0x79, 0x9a,
+	0x92, 0x90, 0xe2, 0x89, 0xa2, 0x02, 0x64, 0x0d, 0xfd, 0x4c, 0x27, 0x34, 0x27, 0xf9, 0x1a, 0xfb,
+	0x81, 0x16, 0x61, 0xd2, 0x6a, 0xb5, 0x1c, 0xcc, 0xae, 0xeb, 0x7c, 0x8d, 0xff, 0x42, 0xef, 0xc0,
+	0xed, 0xa6, 0xee, 0x74, 0x0c, 0xed, 0xa2, 0xde, 0xb0, 0x8c, 0xee, 0x99, 0xe9, 0x48, 0x93, 0x4a,
+	0x66, 0x6b, 0xba, 0x36, 0xcb, 0x3f, 0xef, 0xb3, 0xaf, 0x68, 0x35, 0x10, 0xdd, 0x1c, 0x95, 0xf1,
+	0x11, 0xfe, 0xe2, 0x25, 0x07, 0xcd, 0xd0, 0x25, 0x8f, 0x65, 0x64, 0x5f, 0xad, 0xe5, 0xe9, 0xca,
+	0xa0, 0x9a, 0x0a, 0x1e, 0xaa, 0x67, 0xe9, 0x02, 0xc7, 0xed, 0x33, 0x90, 0xc2, 0x89, 0xe0, 0x29,
+	0x5e, 0x87, 0x1c, 0xb1, 0x08, 0xed, 0x3d, 0xba, 0x26, 0xa1, 0x99, 0xc8, 0xd7, 0x80, 0x7e, 0xda,
+	0x77, 0xbf, 0xa0, 0xfb, 0x83, 0x46, 0xc7, 0xf5, 0x55, 0x54, 0x32, 0x71, 0x30, 0xf7, 0xbc, 0x39,
+	0xc4, 0x44, 0xfd, 0x81, 0x00, 0x6b, 0x43, 0x67, 0x32, 0xca, 0xb8, 0xc2, 0xc9, 0x0f, 0x06, 0x6c,
+	0xd1, 0xa4, 0xba, 0x3e, 0x03, 0x96, 0x23, 0x0c, 0x60, 0x07, 0xd4, 0xe6, 0x6c, 0xff, 0x4f, 0xd7,
+	0x98, 0x9f, 0x8a, 0x50, 0x78, 0x64, 0x35, 0xf5, 0xd6, 0xc5, 0x10, 0x51, 0xfc, 0x8f, 0x5d, 0xc8,
+	0x63, 0xe7, 0x0a, 0x17, 0xf9, 0x43, 0x81, 0x19, 0x07, 0xf2, 0xdf, 0x85, 0x85, 0x03, 0x6c, 0x60,
+	0x12, 0x82, 0xfd, 0xea, 0xd0, 0xae, 0xc1, 0x8a, 0x57, 0xdf, 0x83, 0xc5, 0x61, 0x3d, 0x6e, 0xce,
+	0x08, 0xc5, 0x7f, 0x88, 0xb0, 0x16, 0x60, 0x30, 0xdf, 0xc5, 0x31, 0x60, 0x1c, 0x7f, 0xbf, 0x2e,
+	0x8c, 0xb5, 0x5f, 0x17, 0x6f, 0xd4, 0xaf, 0x5f, 0xff, 0xf2, 0xf0, 0x4a, 0x70, 0xe2, 0xba, 0x25,
+	0x98, 0xbd, 0x62, 0x09, 0xaa, 0x0e, 0xac, 0xc7, 0x06, 0x9a, 0xe7, 0x6a, 0xec, 0xd3, 0x9d, 0xfa,
+	0x2f, 0x01, 0x94, 0x27, 0x9a, 0xa1, 0x37, 0x3f, 0x6d, 0x09, 0x56, 0xbf, 0x0e, 0x1b, 0x09, 0x8e,
+	0xf3, 0x80, 0x6f, 0x83, 0x68, 0x9d, 0x72, 0x87, 0x93, 0xee, 0x33, 0xd1, 0x3a, 0x55, 0x7f, 0x99,
+	0x81, 0x8d, 0x21, 0x5e, 0x1e, 0xec, 0xf8, 0xe6, 0x7a, 0xf6, 0x5f, 0xcf, 0x95, 0xb8, 0x3a, 0x66,
+	0x37, 0x75, 0x64, 0xef, 0x35, 0xbe, 0x3b, 0xfb, 0xe7, 0x02, 0xa8, 0x49, 0x89, 0x4a, 0x7b, 0x89,
+	0x1e, 0xc2, 0x62, 0x84, 0x17, 0x83, 0x8b, 0x74, 0x44, 0xdb, 0x5d, 0x08, 0x79, 0xe9, 0x5e, 0xa8,
+	0x7f, 0x14, 0x61, 0x2d, 0x70, 0x6f, 0x84, 0xe1, 0xf8, 0xff, 0xf0, 0xc6, 0x93, 0xcc, 0x09, 0x13,
+	0x37, 0xe1, 0x04, 0x97, 0x48, 0x63, 0x23, 0xf8, 0xca, 0x88, 0xf4, 0x63, 0x58, 0x0f, 0x5c, 0xb0,
+	0x11, 0xd0, 0xaf, 0xc4, 0x1f, 0x1a, 0x57, 0xf5, 0xea, 0x13, 0x50, 0xe2, 0xb7, 0xe5, 0xce, 0x5c,
+	0x67, 0xdf, 0x1e, 0x6c, 0x0e, 0x41, 0xe0, 0x31, 0x07, 0xcd, 0x53, 0xcb, 0x1c, 0x74, 0x15, 0xe3,
+	0x8f, 0xd3, 0x0b, 0x01, 0xde, 0x4e, 0x3e, 0xf9, 0x55, 0xa5, 0x08, 0x21, 0x3e, 0xbd, 0x89, 0x34,
+	0x2c, 0x6c, 0x3e, 0x5b, 0x85, 0x3b, 0x0f, 0x30, 0xe1, 0x86, 0x1c, 0x12, 0x8d, 0xe8, 0x0e, 0xd1,
+	0x1b, 0x9e, 0xff, 0xea, 0xdf, 0x32, 0xb0, 0x12, 0xbd, 0xce, 0xad, 0x74, 0x60, 0xc1, 0xd0, 0x1c,
+	0x52, 0x27, 0x3d, 0xab, 0xde, 0xc3, 0xf8, 0xb4, 0xce, 0x9e, 0x1d, 0x58, 0xec, 0x73, 0x95, 0x2f,
+	0xfb, 0x29, 0x20, 0x69, 0xa3, 0xd2, 0x43, 0xcd, 0x21, 0x47, 0x3d, 0xeb, 0x13, 0x8c, 0x4f, 0x59,
+	0x17, 0xd0, 0xfc, 0xc8, 0x24, 0xf6, 0x45, 0x0d, 0x19, 0xa1, 0x05, 0xa4, 0xc3, 0x3c, 0xb1, 0x3a,
+	0x75, 0x82, 0xcd, 0xba, 0x47, 0x75, 0x0e, 0xe7, 0x9c, 0xdd, 0xd4, 0x07, 0x1e, 0x59, 0x9d, 0x23,
+	0x6c, 0x7a, 0xb1, 0x77, 0xd8, 0x69, 0xb7, 0x49, 0xf0, 0x2b, 0xda, 0xbc, 0x7c, 0x0f, 0xe7, 0x34,
+	0x98, 0xa1, 0x34, 0x38, 0xe3, 0xc5, 0x97, 0x12, 0xe1, 0x67, 0x60, 0xd6, 0xb3, 0x83, 0x4b, 0xb1,
+	0xeb, 0x22, 0xef, 0x7d, 0xa5, 0x62, 0xf2, 0x47, 0xb0, 0x14, 0xe3, 0x25, 0x9a, 0x83, 0x8c, 0x7b,
+	0xa3, 0xb9, 0xa9, 0x9d, 0xae, 0xb9, 0xff, 0xba, 0xd4, 0x7d, 0xee, 0xa6, 0x92, 0x72, 0x52, 0xbe,
+	0xc6, 0x7e, 0x7c, 0x20, 0xbe, 0x2f, 0xc8, 0x7b, 0x50, 0x88, 0xb2, 0xfd, 0x2a, 0x7b, 0x54, 0x7e,
+	0x27, 0xc1, 0x2c, 0x0f, 0xcd, 0x23, 0xcd, 0xd4, 0xda, 0xd8, 0x46, 0xcf, 0x05, 0xc8, 0x07, 0xfa,
+	0x2f, 0xa4, 0xf8, 0x63, 0x19, 0xf5, 0x1a, 0x22, 0x6f, 0x24, 0x48, 0xb0, 0x30, 0xab, 0xdb, 0xfd,
+	0xea, 0x1c, 0x9a, 0x65, 0x6b, 0x0a, 0x8f, 0xda, 0xb7, 0xff, 0xfa, 0xf7, 0x1f, 0x8b, 0xf3, 0xea,
+	0x4c, 0xf9, 0xfc, 0xf3, 0x65, 0xfe, 0xc9, 0xf9, 0x40, 0xd8, 0x46, 0x3f, 0x12, 0x00, 0x31, 0xc9,
+	0x03, 0x7c, 0xdc, 0x6d, 0x8f, 0xd5, 0x8e, 0x77, 0xfb, 0xd5, 0x45, 0xc4, 0xdf, 0x74, 0x14, 0xfa,
+	0x4e, 0x15, 0xb0, 0x66, 0x49, 0x45, 0xae, 0x35, 0x74, 0xa1, 0xee, 0xb7, 0x49, 0x77, 0x07, 0x87,
+	0xa8, 0x61, 0x13, 0x6d, 0xfa, 0x0f, 0x8d, 0x79, 0x8d, 0x90, 0xb7, 0x13, 0x84, 0x86, 0xa7, 0xd6,
+	0x7f, 0x0a, 0x30, 0x37, 0xbc, 0x4f, 0xba, 0x53, 0xde, 0x4e, 0x16, 0xe2, 0x21, 0xf8, 0xa1, 0xd0,
+	0xaf, 0x12, 0x64, 0x3f, 0xc0, 0xc4, 0x73, 0xdd, 0x29, 0x2a, 0x0d, 0xcd, 0x54, 0x5a, 0xba, 0x41,
+	0xb0, 0xad, 0xf4, 0x74, 0x72, 0xa2, 0x90, 0x13, 0xec, 0x60, 0xa5, 0xa5, 0x63, 0xa3, 0xe9, 0x6c,
+	0x0d, 0x06, 0xa3, 0xa2, 0xe2, 0xd5, 0x72, 0x51, 0x71, 0x89, 0xa3, 0xa8, 0xb0, 0xf6, 0xa3, 0xa8,
+	0xd0, 0x9e, 0xe2, 0x73, 0x45, 0xa5, 0x89, 0x5b, 0x5a, 0xd7, 0x20, 0x8a, 0x8d, 0x49, 0xd7, 0x36,
+	0x15, 0xcd, 0x30, 0x2e, 0x4f, 0xa1, 0x11, 0x9e, 0x45, 0x81, 0x7c, 0xa3, 0xef, 0x88, 0xee, 0x28,
+	0xc7, 0x4c, 0xf5, 0xa7, 0x7b, 0xac, 0x2e, 0xff, 0x42, 0xe8, 0x57, 0x9f, 0x0b, 0xe8, 0x5b, 0xae,
+	0xcf, 0x81, 0xa4, 0xbf, 0x62, 0xcf, 0x83, 0x67, 0x51, 0xff, 0x0b, 0x28, 0xa2, 0xc2, 0x28, 0xea,
+	0x02, 0x97, 0x75, 0xb0, 0xda, 0xa3, 0x9e, 0x16, 0x82, 0xd5, 0x1e, 0x39, 0x63, 0x73, 0xd4, 0xb1,
+	0xb5, 0x20, 0xea, 0x2a, 0x21, 0xd4, 0x7d, 0x57, 0x80, 0xd9, 0xe0, 0x6c, 0x8c, 0x36, 0x82, 0xc1,
+	0x8d, 0x98, 0xb7, 0x65, 0x35, 0x49, 0x84, 0x5b, 0x71, 0xb7, 0x5f, 0x9d, 0x47, 0xb7, 0xd9, 0x62,
+	0x30, 0x18, 0xf3, 0xdb, 0x21, 0x33, 0x7e, 0x2b, 0xc0, 0x52, 0xcc, 0xfc, 0x87, 0xb6, 0x63, 0xf1,
+	0x1d, 0xea, 0x0e, 0xe5, 0xbb, 0xa9, 0x64, 0xb9, 0x85, 0xd5, 0x7e, 0xf5, 0x0e, 0x5a, 0x6e, 0x04,
+	0xd8, 0x49, 0x19, 0x5c, 0xb7, 0xd4, 0xd6, 0x55, 0x55, 0xf2, 0xdb, 0x5a, 0x1e, 0x2c, 0x53, 0xbb,
+	0x5f, 0x0a, 0xb0, 0x12, 0x26, 0xad, 0xd7, 0x61, 0xfc, 0xa3, 0x7e, 0x75, 0x03, 0xad, 0x47, 0x51,
+	0xda, 0xb0, 0x0b, 0x9b, 0xea, 0x5a, 0xb8, 0xf6, 0x86, 0x1d, 0xf9, 0xb5, 0x08, 0x72, 0xfc, 0x58,
+	0x80, 0x76, 0x12, 0x00, 0x17, 0x6e, 0xf6, 0xe4, 0x52, 0x5a, 0x71, 0xee, 0xcc, 0x6f, 0x84, 0x7e,
+	0xf5, 0x85, 0x80, 0xbe, 0x2f, 0xf8, 0xe8, 0xc9, 0xe7, 0x86, 0x53, 0x1c, 0x8d, 0xd5, 0x40, 0x9b,
+	0x34, 0x80, 0xe9, 0x00, 0xbe, 0xa3, 0xa9, 0xca, 0x7f, 0x22, 0x8d, 0x9c, 0x8c, 0x62, 0x93, 0x8f,
+	0xfe, 0x2c, 0xba, 0x3d, 0x6f, 0x98, 0xc1, 0x5e, 0x63, 0xd4, 0xfe, 0x24, 0xf4, 0xab, 0x3f, 0x13,
+	0xd0, 0x4f, 0x84, 0x10, 0xc1, 0xbd, 0xc6, 0xd8, 0xc5, 0x9e, 0x4b, 0x23, 0xa8, 0xa0, 0x11, 0xb5,
+	0x47, 0x91, 0x1f, 0x33, 0xb0, 0x04, 0xc1, 0x93, 0x3c, 0x17, 0x06, 0xc1, 0x33, 0x62, 0x02, 0xe2,
+	0xc8, 0x0f, 0x32, 0x64, 0x08, 0xf9, 0x95, 0x44, 0xe4, 0xff, 0x41, 0x00, 0x29, 0x6e, 0x38, 0x41,
+	0x77, 0x63, 0xf9, 0x31, 0x22, 0xed, 0xc5, 0x74, 0xc2, 0xdc, 0xf4, 0xaf, 0xf4, 0xab, 0x2a, 0x52,
+	0xf6, 0x34, 0xd2, 0x38, 0x51, 0x9a, 0x01, 0x72, 0x0d, 0x05, 0x7f, 0x75, 0x7b, 0x14, 0x77, 0x2d,
+	0xc7, 0x3e, 0x02, 0xa1, 0x80, 0x55, 0xa3, 0x1e, 0xc9, 0xe4, 0x9d, 0x94, 0xd2, 0xdc, 0x89, 0x87,
+	0xfd, 0xea, 0x2a, 0xba, 0xe3, 0xc9, 0xc5, 0x65, 0xe0, 0xb3, 0xea, 0x46, 0xac, 0xfd, 0xe7, 0x5c,
+	0xd7, 0x75, 0xe4, 0xf7, 0x02, 0xac, 0x24, 0x4d, 0x55, 0xa8, 0x9c, 0x00, 0xac, 0xa8, 0xc9, 0x4f,
+	0xbe, 0x97, 0x5e, 0x81, 0x7b, 0xf4, 0xc5, 0x7e, 0x75, 0x05, 0xc9, 0x7e, 0xfa, 0xf2, 0xd0, 0x43,
+	0xfb, 0x86, 0x40, 0x17, 0x70, 0xe9, 0x10, 0x5d, 0x41, 0xbf, 0x12, 0xa0, 0x10, 0x35, 0xac, 0xa0,
+	0x77, 0x46, 0x8f, 0x33, 0xcc, 0xdc, 0xad, 0xb4, 0x73, 0x8f, 0xba, 0x4b, 0x0b, 0xbf, 0x8d, 0x09,
+	0x05, 0x39, 0x5b, 0x54, 0xac, 0x56, 0xa0, 0x4b, 0x58, 0x46, 0x4b, 0x01, 0x2b, 0x07, 0x92, 0x7b,
+	0x13, 0x4f, 0xc5, 0xce, 0xf1, 0xf1, 0x24, 0x9d, 0x3a, 0xbf, 0xf0, 0x9f, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0x0a, 0xa6, 0xa1, 0x25, 0x2d, 0x24, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1062,12 +1801,36 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type RuntimeManagerClient interface {
+	// create runtime
 	CreateRuntime(ctx context.Context, in *CreateRuntimeRequest, opts ...grpc.CallOption) (*CreateRuntimeResponse, error)
+	// create debug runtime
+	CreateDebugRuntime(ctx context.Context, in *CreateRuntimeRequest, opts ...grpc.CallOption) (*CreateRuntimeResponse, error)
 	DescribeRuntimeDetails(ctx context.Context, in *DescribeRuntimesRequest, opts ...grpc.CallOption) (*DescribeRuntimeDetailsResponse, error)
+	// Get runtimes, can filter with these fields(runtime_id, provider, zone, status, owner), default return all runtimes
 	DescribeRuntimes(ctx context.Context, in *DescribeRuntimesRequest, opts ...grpc.CallOption) (*DescribeRuntimesResponse, error)
+	// Get debug runtimes, can filter with these fields(runtime_id, provider, zone, status, owner), default return all debug runtimes
+	DescribeDebugRuntimes(ctx context.Context, in *DescribeRuntimesRequest, opts ...grpc.CallOption) (*DescribeRuntimesResponse, error)
+	// Modify runtime
 	ModifyRuntime(ctx context.Context, in *ModifyRuntimeRequest, opts ...grpc.CallOption) (*ModifyRuntimeResponse, error)
+	// Batch delete runtimes
 	DeleteRuntimes(ctx context.Context, in *DeleteRuntimesRequest, opts ...grpc.CallOption) (*DeleteRuntimesResponse, error)
+	// Create runtime credential
+	CreateRuntimeCredential(ctx context.Context, in *CreateRuntimeCredentialRequest, opts ...grpc.CallOption) (*CreateRuntimeCredentialResponse, error)
+	// Create debug runtime credential
+	CreateDebugRuntimeCredential(ctx context.Context, in *CreateRuntimeCredentialRequest, opts ...grpc.CallOption) (*CreateRuntimeCredentialResponse, error)
+	// Get runtime credentials, filter with these fields(runtime_credential_id, status, provider, owner), default return all runtime credentials
+	DescribeRuntimeCredentials(ctx context.Context, in *DescribeRuntimeCredentialsRequest, opts ...grpc.CallOption) (*DescribeRuntimeCredentialsResponse, error)
+	// Get debug runtime credentials, filter with these fields(runtime_credential_id, status, provider, owner), default return all debug runtime credentials
+	DescribeDebugRuntimeCredentials(ctx context.Context, in *DescribeRuntimeCredentialsRequest, opts ...grpc.CallOption) (*DescribeRuntimeCredentialsResponse, error)
+	// Modify runtime credential
+	ModifyRuntimeCredential(ctx context.Context, in *ModifyRuntimeCredentialRequest, opts ...grpc.CallOption) (*ModifyRuntimeCredentialResponse, error)
+	// Batch delete runtime credentials
+	DeleteRuntimeCredentials(ctx context.Context, in *DeleteRuntimeCredentialsRequest, opts ...grpc.CallOption) (*DeleteRuntimeCredentialsResponse, error)
+	// Validate runtime credential
+	ValidateRuntimeCredential(ctx context.Context, in *ValidateRuntimeCredentialRequest, opts ...grpc.CallOption) (*ValidateRuntimeCredentialResponse, error)
+	// Get runtime provider zones
 	DescribeRuntimeProviderZones(ctx context.Context, in *DescribeRuntimeProviderZonesRequest, opts ...grpc.CallOption) (*DescribeRuntimeProviderZonesResponse, error)
+	// Get statistics of runtime
 	GetRuntimeStatistics(ctx context.Context, in *GetRuntimeStatisticsRequest, opts ...grpc.CallOption) (*GetRuntimeStatisticsResponse, error)
 }
 
@@ -1082,6 +1845,15 @@ func NewRuntimeManagerClient(cc *grpc.ClientConn) RuntimeManagerClient {
 func (c *runtimeManagerClient) CreateRuntime(ctx context.Context, in *CreateRuntimeRequest, opts ...grpc.CallOption) (*CreateRuntimeResponse, error) {
 	out := new(CreateRuntimeResponse)
 	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/CreateRuntime", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) CreateDebugRuntime(ctx context.Context, in *CreateRuntimeRequest, opts ...grpc.CallOption) (*CreateRuntimeResponse, error) {
+	out := new(CreateRuntimeResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/CreateDebugRuntime", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1106,6 +1878,15 @@ func (c *runtimeManagerClient) DescribeRuntimes(ctx context.Context, in *Describ
 	return out, nil
 }
 
+func (c *runtimeManagerClient) DescribeDebugRuntimes(ctx context.Context, in *DescribeRuntimesRequest, opts ...grpc.CallOption) (*DescribeRuntimesResponse, error) {
+	out := new(DescribeRuntimesResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/DescribeDebugRuntimes", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeManagerClient) ModifyRuntime(ctx context.Context, in *ModifyRuntimeRequest, opts ...grpc.CallOption) (*ModifyRuntimeResponse, error) {
 	out := new(ModifyRuntimeResponse)
 	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/ModifyRuntime", in, out, opts...)
@@ -1118,6 +1899,69 @@ func (c *runtimeManagerClient) ModifyRuntime(ctx context.Context, in *ModifyRunt
 func (c *runtimeManagerClient) DeleteRuntimes(ctx context.Context, in *DeleteRuntimesRequest, opts ...grpc.CallOption) (*DeleteRuntimesResponse, error) {
 	out := new(DeleteRuntimesResponse)
 	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/DeleteRuntimes", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) CreateRuntimeCredential(ctx context.Context, in *CreateRuntimeCredentialRequest, opts ...grpc.CallOption) (*CreateRuntimeCredentialResponse, error) {
+	out := new(CreateRuntimeCredentialResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/CreateRuntimeCredential", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) CreateDebugRuntimeCredential(ctx context.Context, in *CreateRuntimeCredentialRequest, opts ...grpc.CallOption) (*CreateRuntimeCredentialResponse, error) {
+	out := new(CreateRuntimeCredentialResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/CreateDebugRuntimeCredential", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) DescribeRuntimeCredentials(ctx context.Context, in *DescribeRuntimeCredentialsRequest, opts ...grpc.CallOption) (*DescribeRuntimeCredentialsResponse, error) {
+	out := new(DescribeRuntimeCredentialsResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/DescribeRuntimeCredentials", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) DescribeDebugRuntimeCredentials(ctx context.Context, in *DescribeRuntimeCredentialsRequest, opts ...grpc.CallOption) (*DescribeRuntimeCredentialsResponse, error) {
+	out := new(DescribeRuntimeCredentialsResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/DescribeDebugRuntimeCredentials", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) ModifyRuntimeCredential(ctx context.Context, in *ModifyRuntimeCredentialRequest, opts ...grpc.CallOption) (*ModifyRuntimeCredentialResponse, error) {
+	out := new(ModifyRuntimeCredentialResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/ModifyRuntimeCredential", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) DeleteRuntimeCredentials(ctx context.Context, in *DeleteRuntimeCredentialsRequest, opts ...grpc.CallOption) (*DeleteRuntimeCredentialsResponse, error) {
+	out := new(DeleteRuntimeCredentialsResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/DeleteRuntimeCredentials", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeManagerClient) ValidateRuntimeCredential(ctx context.Context, in *ValidateRuntimeCredentialRequest, opts ...grpc.CallOption) (*ValidateRuntimeCredentialResponse, error) {
+	out := new(ValidateRuntimeCredentialResponse)
+	err := c.cc.Invoke(ctx, "/openpitrix.RuntimeManager/ValidateRuntimeCredential", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1144,12 +1988,36 @@ func (c *runtimeManagerClient) GetRuntimeStatistics(ctx context.Context, in *Get
 
 // RuntimeManagerServer is the server API for RuntimeManager service.
 type RuntimeManagerServer interface {
+	// create runtime
 	CreateRuntime(context.Context, *CreateRuntimeRequest) (*CreateRuntimeResponse, error)
+	// create debug runtime
+	CreateDebugRuntime(context.Context, *CreateRuntimeRequest) (*CreateRuntimeResponse, error)
 	DescribeRuntimeDetails(context.Context, *DescribeRuntimesRequest) (*DescribeRuntimeDetailsResponse, error)
+	// Get runtimes, can filter with these fields(runtime_id, provider, zone, status, owner), default return all runtimes
 	DescribeRuntimes(context.Context, *DescribeRuntimesRequest) (*DescribeRuntimesResponse, error)
+	// Get debug runtimes, can filter with these fields(runtime_id, provider, zone, status, owner), default return all debug runtimes
+	DescribeDebugRuntimes(context.Context, *DescribeRuntimesRequest) (*DescribeRuntimesResponse, error)
+	// Modify runtime
 	ModifyRuntime(context.Context, *ModifyRuntimeRequest) (*ModifyRuntimeResponse, error)
+	// Batch delete runtimes
 	DeleteRuntimes(context.Context, *DeleteRuntimesRequest) (*DeleteRuntimesResponse, error)
+	// Create runtime credential
+	CreateRuntimeCredential(context.Context, *CreateRuntimeCredentialRequest) (*CreateRuntimeCredentialResponse, error)
+	// Create debug runtime credential
+	CreateDebugRuntimeCredential(context.Context, *CreateRuntimeCredentialRequest) (*CreateRuntimeCredentialResponse, error)
+	// Get runtime credentials, filter with these fields(runtime_credential_id, status, provider, owner), default return all runtime credentials
+	DescribeRuntimeCredentials(context.Context, *DescribeRuntimeCredentialsRequest) (*DescribeRuntimeCredentialsResponse, error)
+	// Get debug runtime credentials, filter with these fields(runtime_credential_id, status, provider, owner), default return all debug runtime credentials
+	DescribeDebugRuntimeCredentials(context.Context, *DescribeRuntimeCredentialsRequest) (*DescribeRuntimeCredentialsResponse, error)
+	// Modify runtime credential
+	ModifyRuntimeCredential(context.Context, *ModifyRuntimeCredentialRequest) (*ModifyRuntimeCredentialResponse, error)
+	// Batch delete runtime credentials
+	DeleteRuntimeCredentials(context.Context, *DeleteRuntimeCredentialsRequest) (*DeleteRuntimeCredentialsResponse, error)
+	// Validate runtime credential
+	ValidateRuntimeCredential(context.Context, *ValidateRuntimeCredentialRequest) (*ValidateRuntimeCredentialResponse, error)
+	// Get runtime provider zones
 	DescribeRuntimeProviderZones(context.Context, *DescribeRuntimeProviderZonesRequest) (*DescribeRuntimeProviderZonesResponse, error)
+	// Get statistics of runtime
 	GetRuntimeStatistics(context.Context, *GetRuntimeStatisticsRequest) (*GetRuntimeStatisticsResponse, error)
 }
 
@@ -1171,6 +2039,24 @@ func _RuntimeManager_CreateRuntime_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeManagerServer).CreateRuntime(ctx, req.(*CreateRuntimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_CreateDebugRuntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRuntimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).CreateDebugRuntime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/CreateDebugRuntime",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).CreateDebugRuntime(ctx, req.(*CreateRuntimeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1211,6 +2097,24 @@ func _RuntimeManager_DescribeRuntimes_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeManager_DescribeDebugRuntimes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeRuntimesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).DescribeDebugRuntimes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/DescribeDebugRuntimes",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).DescribeDebugRuntimes(ctx, req.(*DescribeRuntimesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeManager_ModifyRuntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ModifyRuntimeRequest)
 	if err := dec(in); err != nil {
@@ -1243,6 +2147,132 @@ func _RuntimeManager_DeleteRuntimes_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeManagerServer).DeleteRuntimes(ctx, req.(*DeleteRuntimesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_CreateRuntimeCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRuntimeCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).CreateRuntimeCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/CreateRuntimeCredential",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).CreateRuntimeCredential(ctx, req.(*CreateRuntimeCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_CreateDebugRuntimeCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRuntimeCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).CreateDebugRuntimeCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/CreateDebugRuntimeCredential",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).CreateDebugRuntimeCredential(ctx, req.(*CreateRuntimeCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_DescribeRuntimeCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeRuntimeCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).DescribeRuntimeCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/DescribeRuntimeCredentials",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).DescribeRuntimeCredentials(ctx, req.(*DescribeRuntimeCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_DescribeDebugRuntimeCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeRuntimeCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).DescribeDebugRuntimeCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/DescribeDebugRuntimeCredentials",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).DescribeDebugRuntimeCredentials(ctx, req.(*DescribeRuntimeCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_ModifyRuntimeCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModifyRuntimeCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).ModifyRuntimeCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/ModifyRuntimeCredential",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).ModifyRuntimeCredential(ctx, req.(*ModifyRuntimeCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_DeleteRuntimeCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRuntimeCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).DeleteRuntimeCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/DeleteRuntimeCredentials",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).DeleteRuntimeCredentials(ctx, req.(*DeleteRuntimeCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeManager_ValidateRuntimeCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ValidateRuntimeCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeManagerServer).ValidateRuntimeCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/openpitrix.RuntimeManager/ValidateRuntimeCredential",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeManagerServer).ValidateRuntimeCredential(ctx, req.(*ValidateRuntimeCredentialRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1292,6 +2322,10 @@ var _RuntimeManager_serviceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeManager_CreateRuntime_Handler,
 		},
 		{
+			MethodName: "CreateDebugRuntime",
+			Handler:    _RuntimeManager_CreateDebugRuntime_Handler,
+		},
+		{
 			MethodName: "DescribeRuntimeDetails",
 			Handler:    _RuntimeManager_DescribeRuntimeDetails_Handler,
 		},
@@ -1300,12 +2334,44 @@ var _RuntimeManager_serviceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeManager_DescribeRuntimes_Handler,
 		},
 		{
+			MethodName: "DescribeDebugRuntimes",
+			Handler:    _RuntimeManager_DescribeDebugRuntimes_Handler,
+		},
+		{
 			MethodName: "ModifyRuntime",
 			Handler:    _RuntimeManager_ModifyRuntime_Handler,
 		},
 		{
 			MethodName: "DeleteRuntimes",
 			Handler:    _RuntimeManager_DeleteRuntimes_Handler,
+		},
+		{
+			MethodName: "CreateRuntimeCredential",
+			Handler:    _RuntimeManager_CreateRuntimeCredential_Handler,
+		},
+		{
+			MethodName: "CreateDebugRuntimeCredential",
+			Handler:    _RuntimeManager_CreateDebugRuntimeCredential_Handler,
+		},
+		{
+			MethodName: "DescribeRuntimeCredentials",
+			Handler:    _RuntimeManager_DescribeRuntimeCredentials_Handler,
+		},
+		{
+			MethodName: "DescribeDebugRuntimeCredentials",
+			Handler:    _RuntimeManager_DescribeDebugRuntimeCredentials_Handler,
+		},
+		{
+			MethodName: "ModifyRuntimeCredential",
+			Handler:    _RuntimeManager_ModifyRuntimeCredential_Handler,
+		},
+		{
+			MethodName: "DeleteRuntimeCredentials",
+			Handler:    _RuntimeManager_DeleteRuntimeCredentials_Handler,
+		},
+		{
+			MethodName: "ValidateRuntimeCredential",
+			Handler:    _RuntimeManager_ValidateRuntimeCredential_Handler,
 		},
 		{
 			MethodName: "DescribeRuntimeProviderZones",

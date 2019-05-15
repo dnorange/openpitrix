@@ -13,12 +13,12 @@ import (
 	"openpitrix.io/openpitrix/pkg/models"
 	"openpitrix.io/openpitrix/pkg/pb"
 	"openpitrix.io/openpitrix/pkg/pi"
+	"openpitrix.io/openpitrix/pkg/util/ctxutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
-	"openpitrix.io/openpitrix/pkg/util/senderutil"
 )
 
 func (p *Server) CreateJob(ctx context.Context, req *pb.CreateJobRequest) (*pb.CreateJobResponse, error) {
-	s := senderutil.GetSenderFromContext(ctx)
+	s := ctxutil.GetSender(ctx)
 	newJob := models.NewJob(
 		"",
 		req.GetClusterId().GetValue(),
@@ -27,7 +27,7 @@ func (p *Server) CreateJob(ctx context.Context, req *pb.CreateJobRequest) (*pb.C
 		req.GetJobAction().GetValue(),
 		req.GetDirective().GetValue(),
 		req.GetProvider().GetValue(),
-		s.UserId,
+		s.GetOwnerPath(),
 		req.GetRuntimeId().GetValue(),
 	)
 
@@ -58,16 +58,20 @@ func (p *Server) DescribeJobs(ctx context.Context, req *pb.DescribeJobsRequest) 
 	offset := pbutil.GetOffsetFromRequest(req)
 	limit := pbutil.GetLimitFromRequest(req)
 
+	displayColumns := manager.GetDisplayColumns(req.GetDisplayColumns(), models.JobColumns)
 	query := pi.Global().DB(ctx).
-		Select(models.JobColumns...).
+		Select(displayColumns...).
 		From(constants.TableJob).
 		Offset(offset).
 		Limit(limit).
+		Where(manager.BuildPermissionFilter(ctx)).
 		Where(manager.BuildFilterConditions(req, constants.TableJob))
 	query = manager.AddQueryOrderDir(query, req, constants.ColumnCreateTime)
-	_, err := query.Load(&jobs)
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+	if len(displayColumns) > 0 {
+		_, err := query.Load(&jobs)
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+		}
 	}
 	count, err := query.Count()
 	if err != nil {

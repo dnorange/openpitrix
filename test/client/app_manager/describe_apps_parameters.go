@@ -63,29 +63,70 @@ for the describe apps operation typically these are written to a http.Request
 */
 type DescribeAppsParams struct {
 
-	/*AppID*/
+	/*AppID
+	  app ids.
+
+	*/
 	AppID []string
-	/*CategoryID*/
+	/*CategoryID
+	  app category ids.
+
+	*/
 	CategoryID []string
-	/*ChartName*/
+	/*ChartName
+	  app chart name.
+
+	*/
 	ChartName []string
-	/*Limit*/
+	/*DisplayColumns
+	  select column to display.
+
+	*/
+	DisplayColumns []string
+	/*Limit
+	  data limit per page, default is 20, max value is 200.
+
+	*/
 	Limit *int64
-	/*Name*/
+	/*Name
+	  app name.
+
+	*/
 	Name []string
-	/*Offset*/
+	/*Offset
+	  data offset, default is 0.
+
+	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  app owner.
+
+	*/
 	Owner []string
-	/*RepoID*/
+	/*RepoID
+	  app repository ids.
+
+	*/
 	RepoID []string
-	/*Reverse*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
 	Reverse *bool
-	/*SearchWord*/
+	/*SearchWord
+	  query key, support these fields(app_id, name, repo_id, description, status, home, icon, screenshots, maintainers, sources, readme, owner, chart_name).
+
+	*/
 	SearchWord *string
-	/*SortKey*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
 	SortKey *string
-	/*Status*/
+	/*Status
+	  app status eg.[modify|submit|review|cancel|release|delete|pass|reject|suspend|recover].
+
+	*/
 	Status []string
 
 	timeout    time.Duration
@@ -157,6 +198,17 @@ func (o *DescribeAppsParams) WithChartName(chartName []string) *DescribeAppsPara
 // SetChartName adds the chartName to the describe apps params
 func (o *DescribeAppsParams) SetChartName(chartName []string) {
 	o.ChartName = chartName
+}
+
+// WithDisplayColumns adds the displayColumns to the describe apps params
+func (o *DescribeAppsParams) WithDisplayColumns(displayColumns []string) *DescribeAppsParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe apps params
+func (o *DescribeAppsParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithLimit adds the limit to the describe apps params
@@ -287,6 +339,14 @@ func (o *DescribeAppsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 	joinedChartName := swag.JoinByFormat(valuesChartName, "multi")
 	// query array param chart_name
 	if err := r.SetQueryParam("chart_name", joinedChartName...); err != nil {
+		return err
+	}
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
 		return err
 	}
 

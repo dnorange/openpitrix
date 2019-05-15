@@ -10,6 +10,7 @@ import (
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/pb"
+	"openpitrix.io/openpitrix/pkg/sender"
 	"openpitrix.io/openpitrix/pkg/util/idutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
 )
@@ -33,7 +34,11 @@ type App struct {
 	Sources     string
 	Readme      string
 	Owner       string
+	OwnerPath   sender.OwnerPath
 	ChartName   string
+	Tos         string
+	Abstraction string
+	Isv         string
 	CreateTime  time.Time
 	StatusTime  time.Time
 	UpdateTime  *time.Time
@@ -41,13 +46,15 @@ type App struct {
 
 var AppColumns = db.GetColumnsFromStruct(&App{})
 
-func NewApp(name, owner string) *App {
+func NewApp(name string, ownerPath sender.OwnerPath, isv string) *App {
 	return &App{
 		AppId:      NewAppId(),
 		Active:     false,
 		Name:       name,
 		Status:     constants.StatusDraft,
-		Owner:      owner,
+		Owner:      ownerPath.Owner(),
+		OwnerPath:  ownerPath,
+		Isv:        isv,
 		CreateTime: time.Now(),
 		StatusTime: time.Now(),
 	}
@@ -68,8 +75,12 @@ func AppToPb(app *App) *pb.App {
 	pbApp.Sources = pbutil.ToProtoString(app.Sources)
 	pbApp.Readme = pbutil.ToProtoString(app.Readme)
 	pbApp.ChartName = pbutil.ToProtoString(app.ChartName)
+	pbApp.OwnerPath = app.OwnerPath.ToProtoString()
 	pbApp.Owner = pbutil.ToProtoString(app.Owner)
+	pbApp.Isv = pbutil.ToProtoString(app.Isv)
 	pbApp.Keywords = pbutil.ToProtoString(app.Keywords)
+	pbApp.Abstraction = pbutil.ToProtoString(app.Abstraction)
+	pbApp.Tos = pbutil.ToProtoString(app.Tos)
 	pbApp.CreateTime = pbutil.ToProtoTimestamp(app.CreateTime)
 	pbApp.StatusTime = pbutil.ToProtoTimestamp(app.StatusTime)
 	if app.UpdateTime != nil {

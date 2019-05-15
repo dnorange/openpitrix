@@ -16,37 +16,40 @@ import (
 // swagger:model openpitrixRuntime
 type OpenpitrixRuntime struct {
 
-	// create time
+	// the time when runtime create
 	CreateTime strfmt.DateTime `json:"create_time,omitempty"`
 
-	// description
+	// debug or not
+	Debug bool `json:"debug,omitempty"`
+
+	// runtime description
 	Description string `json:"description,omitempty"`
 
-	// labels
-	Labels OpenpitrixRuntimeLabels `json:"labels"`
-
-	// name
+	// runtime name,create by owner.
 	Name string `json:"name,omitempty"`
 
 	// owner
 	Owner string `json:"owner,omitempty"`
 
-	// provider
+	// owner path, concat string group_path:user_id
+	OwnerPath string `json:"owner_path,omitempty"`
+
+	// runtime provider.eg.[qingcloud|aliyun|aws|kubernetes]
 	Provider string `json:"provider,omitempty"`
+
+	// runtime credential id
+	RuntimeCredentialID string `json:"runtime_credential_id,omitempty"`
 
 	// runtime id
 	RuntimeID string `json:"runtime_id,omitempty"`
 
-	// runtime url
-	RuntimeURL string `json:"runtime_url,omitempty"`
-
-	// status
+	// status eg.[active|deleted]
 	Status string `json:"status,omitempty"`
 
-	// status time
+	// record status changed time
 	StatusTime strfmt.DateTime `json:"status_time,omitempty"`
 
-	// zone
+	// runtime zone eg.[pek3a|pek3b|...]
 	Zone string `json:"zone,omitempty"`
 }
 

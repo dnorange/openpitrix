@@ -13,6 +13,7 @@ import (
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/pb"
+	"openpitrix.io/openpitrix/pkg/sender"
 	"openpitrix.io/openpitrix/pkg/util/idutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
 )
@@ -26,6 +27,7 @@ type AppVersion struct {
 	Active      bool
 	AppId       string
 	Owner       string
+	OwnerPath   sender.OwnerPath
 	Name        string
 	Description string
 	PackageName string
@@ -37,6 +39,7 @@ type AppVersion struct {
 	Sources     string
 	Readme      string
 	Status      string
+	ReviewId    string
 	Message     string
 	Type        string
 	Sequence    uint32
@@ -78,13 +81,14 @@ func (c AppVersions) Less(a, b int) bool {
 	return i.LessThan(j)
 }
 
-func NewAppVersion(appId, name, description, owner string) *AppVersion {
+func NewAppVersion(appId, name, description string, ownerPath sender.OwnerPath) *AppVersion {
 	return &AppVersion{
 		VersionId:   NewAppVersionId(),
 		Active:      false,
 		AppId:       appId,
 		Name:        name,
-		Owner:       owner,
+		Owner:       ownerPath.Owner(),
+		OwnerPath:   ownerPath,
 		Description: description,
 		Status:      constants.StatusDraft,
 		CreateTime:  time.Now(),
@@ -104,12 +108,14 @@ func AppVersionToPb(appVersion *AppVersion) *pb.AppVersion {
 	pbAppVersion.Description = pbutil.ToProtoString(appVersion.Description)
 	pbAppVersion.Status = pbutil.ToProtoString(appVersion.Status)
 	pbAppVersion.PackageName = pbutil.ToProtoString(appVersion.PackageName)
+	pbAppVersion.OwnerPath = appVersion.OwnerPath.ToProtoString()
 	pbAppVersion.Owner = pbutil.ToProtoString(appVersion.Owner)
 	pbAppVersion.CreateTime = pbutil.ToProtoTimestamp(appVersion.CreateTime)
 	pbAppVersion.StatusTime = pbutil.ToProtoTimestamp(appVersion.StatusTime)
 	pbAppVersion.Sequence = pbutil.ToProtoUInt32(appVersion.Sequence)
 	pbAppVersion.Message = pbutil.ToProtoString(appVersion.Message)
 	pbAppVersion.Type = pbutil.ToProtoString(appVersion.Type)
+	pbAppVersion.ReviewId = pbutil.ToProtoString(appVersion.ReviewId)
 	if appVersion.UpdateTime != nil {
 		pbAppVersion.UpdateTime = pbutil.ToProtoTimestamp(*appVersion.UpdateTime)
 	}

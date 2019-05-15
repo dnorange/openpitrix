@@ -14,12 +14,12 @@ import (
 	"openpitrix.io/openpitrix/pkg/models"
 	"openpitrix.io/openpitrix/pkg/pb"
 	"openpitrix.io/openpitrix/pkg/pi"
+	"openpitrix.io/openpitrix/pkg/util/ctxutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
-	"openpitrix.io/openpitrix/pkg/util/senderutil"
 )
 
 func (p *Server) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.CreateTaskResponse, error) {
-	s := senderutil.GetSenderFromContext(ctx)
+	s := ctxutil.GetSender(ctx)
 	newTask := models.NewTask(
 		"",
 		req.GetJobId().GetValue(),
@@ -27,7 +27,7 @@ func (p *Server) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb
 		req.GetTarget().GetValue(),
 		req.GetTaskAction().GetValue(),
 		req.GetDirective().GetValue(),
-		s.UserId,
+		s.GetOwnerPath(),
 		req.GetFailureAllowed().GetValue(),
 	)
 
@@ -62,17 +62,21 @@ func (p *Server) DescribeTasks(ctx context.Context, req *pb.DescribeTasksRequest
 	offset := pbutil.GetOffsetFromRequest(req)
 	limit := pbutil.GetLimitFromRequest(req)
 
+	displayColumns := manager.GetDisplayColumns(req.GetDisplayColumns(), models.TaskColumns)
 	query := pi.Global().DB(ctx).
-		Select(models.TaskColumns...).
+		Select(displayColumns...).
 		From(constants.TableTask).
 		Offset(offset).
 		Limit(limit).
+		Where(manager.BuildPermissionFilter(ctx)).
 		Where(manager.BuildFilterConditions(req, constants.TableTask)).
-		OrderDir("create_time", true)
+		OrderDir(constants.ColumnCreateTime, true)
 
-	_, err := query.Load(&tasks)
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+	if len(displayColumns) > 0 {
+		_, err := query.Load(&tasks)
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+		}
 	}
 	count, err := query.Count()
 	if err != nil {

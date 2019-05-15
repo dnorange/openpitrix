@@ -5,9 +5,11 @@
 package manager
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/fatih/structs"
 	"github.com/gocraft/dbr"
@@ -17,7 +19,9 @@ import (
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/logger"
+	"openpitrix.io/openpitrix/pkg/util/ctxutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
+	"openpitrix.io/openpitrix/pkg/util/reflectutil"
 	"openpitrix.io/openpitrix/pkg/util/stringutil"
 )
 
@@ -34,6 +38,10 @@ type RequestWithSortKey interface {
 type RequestWithReverse interface {
 	RequestWithSortKey
 	GetReverse() *wrappers.BoolValue
+}
+type RequestWithOwner interface {
+	Request
+	GetOwner() []string
 }
 
 const (
@@ -101,6 +109,22 @@ func BuildFilterConditions(req Request, tableName string, exclude ...string) dbr
 	return buildFilterConditions(false, req, tableName, exclude...)
 }
 
+func GetDisplayColumns(displayColumns []string, wholeColumns []string) []string {
+	if displayColumns == nil {
+		return wholeColumns
+	} else if len(displayColumns) == 0 {
+		return nil
+	} else {
+		var newDisplayColumns []string
+		for _, column := range displayColumns {
+			if stringutil.StringIn(column, wholeColumns) {
+				newDisplayColumns = append(newDisplayColumns, column)
+			}
+		}
+		return newDisplayColumns
+	}
+}
+
 func BuildFilterConditionsWithPrefix(req Request, tableName string, exclude ...string) dbr.Builder {
 	return buildFilterConditions(true, req, tableName, exclude...)
 }
@@ -151,7 +175,10 @@ func BuildUpdateAttributes(req Request, columns ...string) map[string]interface{
 		column := getFieldName(field)
 		f := field.Value()
 		v := reflect.ValueOf(f)
-		if stringutil.FindString(columns, column) > -1 && !v.IsNil() {
+		if !stringutil.StringIn(column, columns) {
+			continue
+		}
+		if !reflectutil.ValueIsNil(v) {
 			switch v := f.(type) {
 			case *wrappers.StringValue:
 				attributes[column] = v.GetValue()
@@ -162,7 +189,9 @@ func BuildUpdateAttributes(req Request, columns ...string) map[string]interface{
 			case *wrappers.UInt32Value:
 				attributes[column] = v.GetValue()
 			case *timestamp.Timestamp:
-				attributes[column] = pbutil.FromProtoTimestamp(v)
+				attributes[column] = pbutil.GetTime(v)
+			case string, bool, int32, uint32, time.Time:
+				attributes[column] = v
 
 			default:
 				attributes[column] = v
@@ -203,4 +232,16 @@ func AddQueryJoinWithMap(query *db.SelectQuery, table, joinTable, primaryKey, ke
 		query = query.Where(db.And(whereCondition...))
 	}
 	return query
+}
+
+func BuildPermissionFilter(ctx context.Context) dbr.Builder {
+	s := ctxutil.GetSender(ctx)
+	if s == nil {
+		return nil
+	}
+	ops := []dbr.Builder{
+		db.Prefix(constants.ColumnOwnerPath, string(s.GetAccessPath())),
+		db.Eq(constants.ColumnOwner, s.UserId),
+	}
+	return db.Or(ops...)
 }

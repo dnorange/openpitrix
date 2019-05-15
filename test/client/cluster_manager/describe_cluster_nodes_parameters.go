@@ -63,23 +63,55 @@ for the describe cluster nodes operation typically these are written to a http.R
 */
 type DescribeClusterNodesParams struct {
 
-	/*ClusterID*/
+	/*ClusterID
+	  cluster id.
+
+	*/
 	ClusterID *string
-	/*Limit*/
+	/*DisplayColumns
+	  select columns to display.
+
+	*/
+	DisplayColumns []string
+	/*Limit
+	  data limit per page, default value 20, max value 200.
+
+	*/
 	Limit *int64
-	/*NodeID*/
+	/*NodeID
+	  node ids.
+
+	*/
 	NodeID []string
-	/*Offset*/
+	/*Offset
+	  data offset, default 0.
+
+	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  owner.
+
+	*/
 	Owner []string
-	/*Reverse*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
 	Reverse *bool
-	/*SearchWord*/
+	/*SearchWord
+	  query key, support these fields(cluster_id, node_id, status, owner).
+
+	*/
 	SearchWord *string
-	/*SortKey*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
 	SortKey *string
-	/*Status*/
+	/*Status
+	  status eg.[active|used|enabled|disabled|deleted|stopped|ceased].
+
+	*/
 	Status []string
 
 	timeout    time.Duration
@@ -129,6 +161,17 @@ func (o *DescribeClusterNodesParams) WithClusterID(clusterID *string) *DescribeC
 // SetClusterID adds the clusterId to the describe cluster nodes params
 func (o *DescribeClusterNodesParams) SetClusterID(clusterID *string) {
 	o.ClusterID = clusterID
+}
+
+// WithDisplayColumns adds the displayColumns to the describe cluster nodes params
+func (o *DescribeClusterNodesParams) WithDisplayColumns(displayColumns []string) *DescribeClusterNodesParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe cluster nodes params
+func (o *DescribeClusterNodesParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithLimit adds the limit to the describe cluster nodes params
@@ -241,6 +284,14 @@ func (o *DescribeClusterNodesParams) WriteToRequest(r runtime.ClientRequest, reg
 			}
 		}
 
+	}
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
+		return err
 	}
 
 	if o.Limit != nil {

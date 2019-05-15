@@ -10,6 +10,7 @@ import (
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/pb"
+	"openpitrix.io/openpitrix/pkg/sender"
 	"openpitrix.io/openpitrix/pkg/util/idutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
 )
@@ -20,24 +21,29 @@ func NewRuntimeId() string {
 	return idutil.GetUuid(RuntimeIdPrefix)
 }
 
+type RuntimeDetails struct {
+	Runtime
+	RuntimeCredential
+}
+
 type Runtime struct {
 	RuntimeId           string
 	Name                string
 	Description         string
 	Provider            string
-	RuntimeUrl          string
 	Zone                string
 	RuntimeCredentialId string
 	Owner               string
+	OwnerPath           sender.OwnerPath
 	Status              string
+	Debug               bool
 	CreateTime          time.Time
 	StatusTime          time.Time
 }
 
-var RuntimeColumnsWithTablePrefix = db.GetColumnsFromStructWithPrefix(constants.TableRuntime, &Runtime{})
 var RuntimeColumns = db.GetColumnsFromStruct(&Runtime{})
 
-func NewRuntime(runtimeId, name, description, provider, runtimeUrl, runtimeCredentialId, zone, owner string) *Runtime {
+func NewRuntime(runtimeId, name, description, provider, runtimeCredentialId, zone string, ownerPath sender.OwnerPath, debug bool) *Runtime {
 	if len(runtimeId) == 0 {
 		runtimeId = NewRuntimeId()
 	}
@@ -46,13 +52,14 @@ func NewRuntime(runtimeId, name, description, provider, runtimeUrl, runtimeCrede
 		Name:                name,
 		Description:         description,
 		Provider:            provider,
-		RuntimeUrl:          runtimeUrl,
 		Zone:                zone,
 		RuntimeCredentialId: runtimeCredentialId,
-		Owner:               owner,
+		Owner:               ownerPath.Owner(),
+		OwnerPath:           ownerPath,
 		Status:              constants.StatusActive,
 		CreateTime:          time.Now(),
 		StatusTime:          time.Now(),
+		Debug:               debug,
 	}
 }
 
@@ -62,27 +69,32 @@ func RuntimeToPb(runtime *Runtime) *pb.Runtime {
 	pbRuntime.Name = pbutil.ToProtoString(runtime.Name)
 	pbRuntime.Description = pbutil.ToProtoString(runtime.Description)
 	pbRuntime.Provider = pbutil.ToProtoString(runtime.Provider)
-	pbRuntime.RuntimeUrl = pbutil.ToProtoString(runtime.RuntimeUrl)
 	pbRuntime.Zone = pbutil.ToProtoString(runtime.Zone)
+	pbRuntime.RuntimeCredentialId = pbutil.ToProtoString(runtime.RuntimeCredentialId)
+	pbRuntime.OwnerPath = runtime.OwnerPath.ToProtoString()
 	pbRuntime.Owner = pbutil.ToProtoString(runtime.Owner)
 	pbRuntime.Status = pbutil.ToProtoString(runtime.Status)
+	pbRuntime.Debug = pbutil.ToProtoBool(runtime.Debug)
 	pbRuntime.CreateTime = pbutil.ToProtoTimestamp(runtime.CreateTime)
 	pbRuntime.StatusTime = pbutil.ToProtoTimestamp(runtime.StatusTime)
 	return &pbRuntime
 }
 
 func PbToRuntime(pbRuntime *pb.Runtime) *Runtime {
+	ownerPath := sender.OwnerPath(pbRuntime.GetOwnerPath().GetValue())
 	runtime := Runtime{}
 	runtime.RuntimeId = pbRuntime.GetRuntimeId().GetValue()
 	runtime.Name = pbRuntime.GetName().GetValue()
 	runtime.Description = pbRuntime.GetDescription().GetValue()
 	runtime.Provider = pbRuntime.GetProvider().GetValue()
-	runtime.RuntimeUrl = pbRuntime.GetRuntimeUrl().GetValue()
 	runtime.Zone = pbRuntime.GetZone().GetValue()
-	runtime.Owner = pbRuntime.GetOwner().GetValue()
+	runtime.RuntimeCredentialId = pbRuntime.GetRuntimeCredentialId().GetValue()
+	runtime.OwnerPath = ownerPath
+	runtime.Owner = ownerPath.Owner()
 	runtime.Status = pbRuntime.GetStatus().GetValue()
-	runtime.CreateTime = pbutil.FromProtoTimestamp(pbRuntime.GetCreateTime())
-	runtime.StatusTime = pbutil.FromProtoTimestamp(pbRuntime.GetStatusTime())
+	runtime.Debug = pbRuntime.GetDebug().GetValue()
+	runtime.CreateTime = pbutil.GetTime(pbRuntime.GetCreateTime())
+	runtime.StatusTime = pbutil.GetTime(pbRuntime.GetStatusTime())
 	return &runtime
 }
 

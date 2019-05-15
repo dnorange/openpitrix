@@ -63,19 +63,31 @@ for the describe market users operation typically these are written to a http.Re
 */
 type DescribeMarketUsersParams struct {
 
-	/*Limit*/
+	/*Limit
+	  default is 20, max value is 200.
+
+	*/
 	Limit *int64
 	/*MarketID*/
 	MarketID []string
-	/*Offset*/
+	/*Offset
+	  default is 0.
+
+	*/
 	Offset *int64
 	/*Owner*/
 	Owner []string
-	/*Reverse*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
 	Reverse *bool
 	/*SearchWord*/
 	SearchWord *string
-	/*SortKey*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
 	SortKey *string
 	/*UserID*/
 	UserID []string

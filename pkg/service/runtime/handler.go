@@ -10,6 +10,7 @@ import (
 	"time"
 
 	clusterclient "openpitrix.io/openpitrix/pkg/client/cluster"
+	providerclient "openpitrix.io/openpitrix/pkg/client/runtime_provider"
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/gerr"
@@ -18,52 +19,92 @@ import (
 	"openpitrix.io/openpitrix/pkg/models"
 	"openpitrix.io/openpitrix/pkg/pb"
 	"openpitrix.io/openpitrix/pkg/pi"
-	"openpitrix.io/openpitrix/pkg/plugins"
-	"openpitrix.io/openpitrix/pkg/util/labelutil"
+	"openpitrix.io/openpitrix/pkg/util/ctxutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
-	"openpitrix.io/openpitrix/pkg/util/senderutil"
 )
 
 func (p *Server) CreateRuntime(ctx context.Context, req *pb.CreateRuntimeRequest) (*pb.CreateRuntimeResponse, error) {
-	s := senderutil.GetSenderFromContext(ctx)
+	return p.createRuntime(ctx, req, false)
+}
+
+func (p *Server) CreateDebugRuntime(ctx context.Context, req *pb.CreateRuntimeRequest) (*pb.CreateRuntimeResponse, error) {
+	return p.createRuntime(ctx, req, true)
+}
+
+func (p *Server) createRuntime(ctx context.Context, req *pb.CreateRuntimeRequest, debug bool) (*pb.CreateRuntimeResponse, error) {
+	s := ctxutil.GetSender(ctx)
 	runtimeId := models.NewRuntimeId()
-	// validate req
-	err := validateCreateRuntimeRequest(ctx, runtimeId, req)
-	// TODO: refactor create runtime params
+	runtimeCredentialId := req.GetRuntimeCredentialId().GetValue()
+	zone := req.GetZone().GetValue()
+
+	runtimeCredential, err := CheckRuntimeCredentialPermission(ctx, runtimeCredentialId)
 	if err != nil {
-		if gerr.IsGRPCError(err) {
-			return nil, err
-		} else {
-			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorValidateFailed)
-		}
+		return nil, err
 	}
 
-	// create runtime credential
-	runtimeCredentialId, err := createRuntimeCredential(ctx, req.Provider.GetValue(), req.RuntimeCredential.GetValue())
+	if runtimeCredential.Status == constants.StatusDeleted {
+		logger.Error(ctx, "Runtime credential [%s] has been deleted", runtimeCredentialId)
+		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorResourceAlreadyDeleted, runtimeCredentialId)
+	}
+
+	if runtimeCredential.Provider != req.GetProvider().GetValue() {
+		logger.Error(ctx, "Runtime credential [%s] provider is [%s] not [%s]", runtimeCredentialId,
+			runtimeCredential.Provider, req.GetProvider().GetValue())
+		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorCreateResourcesFailed)
+	}
+
+	if runtimeCredential.Debug != debug {
+		logger.Error(ctx, "Runtime credential [%s] debug is [%t] not [%t]", runtimeCredentialId,
+			runtimeCredential.Debug, debug)
+		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorCreateResourcesFailed)
+	}
+
+	runtimeCredential.RuntimeCredentialContent, err = encodeRuntimeCredentialContent(
+		runtimeCredential.Provider, runtimeCredential.RuntimeCredentialContent)
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
+	}
+
+	err = ValidateRuntime(ctx, runtimeId, zone, runtimeCredential, true)
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorCreateResourcesFailed)
+	}
+
+	query := pi.Global().DB(ctx).
+		Select(models.RuntimeColumns...).
+		From(constants.TableRuntime).
+		Where(db.Eq(constants.ColumnRuntimeCredentialId, runtimeCredentialId)).
+		Where(db.Eq(constants.ColumnZone, req.GetZone().GetValue())).
+		Where(db.Eq(constants.ColumnStatus, constants.StatusActive)).
+		Where(db.Eq(constants.ColumnProvider, req.GetProvider().GetValue())).
+		Where(db.Eq(constants.ColumnDebug, debug)).
+		Where(db.Eq(constants.ColumnOwner, s.GetOwnerPath().Owner())).
+		Where(db.Eq(constants.ColumnOwnerPath, s.GetOwnerPath()))
+
+	count, err := query.Count()
 	if err != nil {
 		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorCreateResourcesFailed)
 	}
+	if count > 0 {
+		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorRuntimeExists)
+	}
 
-	// create runtime
-	err = createRuntime(
-		ctx,
+	newRuntime := models.NewRuntime(
 		runtimeId,
 		req.GetName().GetValue(),
 		req.GetDescription().GetValue(),
-		req.Provider.GetValue(),
-		req.GetRuntimeUrl().GetValue(),
+		req.GetProvider().GetValue(),
 		runtimeCredentialId,
-		req.Zone.GetValue(),
-		s.UserId)
+		req.GetZone().GetValue(),
+		s.GetOwnerPath(),
+		debug,
+	)
+	_, err = pi.Global().DB(ctx).
+		InsertInto(constants.TableRuntime).
+		Record(newRuntime).
+		Exec()
 	if err != nil {
 		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorCreateResourcesFailed)
-	}
-
-	if req.GetLabels() != nil {
-		err = labelutil.SyncRuntimeLabels(ctx, runtimeId, req.GetLabels().GetValue())
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	res := &pb.CreateRuntimeResponse{
@@ -73,84 +114,61 @@ func (p *Server) CreateRuntime(ctx context.Context, req *pb.CreateRuntimeRequest
 }
 
 func (p *Server) DescribeRuntimes(ctx context.Context, req *pb.DescribeRuntimesRequest) (*pb.DescribeRuntimesResponse, error) {
-	// TODO: refactor validate req
-	err := validateDescribeRuntimesRequest(ctx, req)
-	if err != nil {
-		if gerr.IsGRPCError(err) {
-			return nil, err
-		} else {
-			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorValidateFailed)
-		}
-	}
+	return p.describeRuntimes(ctx, req, false)
+}
+
+func (p *Server) DescribeDebugRuntimes(ctx context.Context, req *pb.DescribeRuntimesRequest) (*pb.DescribeRuntimesResponse, error) {
+	return p.describeRuntimes(ctx, req, true)
+}
+
+func (p *Server) describeRuntimes(ctx context.Context, req *pb.DescribeRuntimesRequest, debug bool) (*pb.DescribeRuntimesResponse, error) {
 	offset := pbutil.GetOffsetFromRequest(req)
 	limit := pbutil.GetLimitFromRequest(req)
-	selectorMap, err := SelectorStringToMap(req.Label.GetValue())
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorParameterParseFailed, "label")
-	}
 
 	var runtimes []*models.Runtime
-	var count uint32
+	displayColumns := manager.GetDisplayColumns(req.GetDisplayColumns(), models.RuntimeColumns)
 	query := pi.Global().DB(ctx).
-		Select(models.RuntimeColumnsWithTablePrefix...).
+		Select(displayColumns...).
 		From(constants.TableRuntime).
 		Offset(offset).
 		Limit(limit).
-		Where(manager.BuildFilterConditionsWithPrefix(req, constants.TableRuntime))
-
-	query = manager.AddQueryJoinWithMap(query, constants.TableRuntime, constants.TableRuntimeLabel, constants.ColumnRuntimeId,
-		constants.ColumnLabelKey, constants.ColumnLabelValue, selectorMap)
+		Where(manager.BuildPermissionFilter(ctx)).
+		Where(manager.BuildFilterConditions(req, constants.TableRuntime))
+	query = query.Where(db.Eq(constants.ColumnDebug, debug))
 	query = manager.AddQueryOrderDir(query, req, constants.ColumnCreateTime)
-	_, err = query.Load(&runtimes)
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+	if len(displayColumns) > 0 {
+		_, err := query.Load(&runtimes)
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+		}
 	}
 
-	count, err = query.Count()
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
-	}
-	pbRuntime, err := formatRuntimeSet(ctx, runtimes)
+	count, err := query.Count()
 	if err != nil {
 		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
 	}
 	res := &pb.DescribeRuntimesResponse{
-		RuntimeSet: pbRuntime,
+		RuntimeSet: models.RuntimeToPbs(runtimes),
 		TotalCount: count,
 	}
 	return res, nil
 }
 
 func (p *Server) DescribeRuntimeDetails(ctx context.Context, req *pb.DescribeRuntimesRequest) (*pb.DescribeRuntimeDetailsResponse, error) {
-	// TODO: refactor validate req
-	err := validateDescribeRuntimesRequest(ctx, req)
-	if err != nil {
-		if gerr.IsGRPCError(err) {
-			return nil, err
-		} else {
-			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorValidateFailed)
-		}
-	}
 	offset := pbutil.GetOffsetFromRequest(req)
 	limit := pbutil.GetLimitFromRequest(req)
-	selectorMap, err := SelectorStringToMap(req.Label.GetValue())
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorParameterParseFailed, "label")
-	}
 
 	var runtimes []*models.Runtime
 	var count uint32
 	query := pi.Global().DB(ctx).
-		Select(models.RuntimeColumnsWithTablePrefix...).
+		Select(models.RuntimeColumns...).
 		From(constants.TableRuntime).
 		Offset(offset).
 		Limit(limit).
-		Where(manager.BuildFilterConditionsWithPrefix(req, constants.TableRuntime))
-
-	query = manager.AddQueryJoinWithMap(query, constants.TableRuntime, constants.TableRuntimeLabel, constants.ColumnRuntimeId,
-		constants.ColumnLabelKey, constants.ColumnLabelValue, selectorMap)
+		Where(manager.BuildPermissionFilter(ctx)).
+		Where(manager.BuildFilterConditions(req, constants.TableRuntime))
 	query = manager.AddQueryOrderDir(query, req, constants.ColumnCreateTime)
-	_, err = query.Load(&runtimes)
+	_, err := query.Load(&runtimes)
 	if err != nil {
 		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
 	}
@@ -176,55 +194,41 @@ func (p *Server) ModifyRuntime(ctx context.Context, req *pb.ModifyRuntimeRequest
 	if err != nil {
 		return nil, err
 	}
-	// validate req
-	err = validateModifyRuntimeRequest(ctx, req)
-	if err != nil {
-		if gerr.IsGRPCError(err) {
-			return nil, err
-		} else {
-			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorValidateFailed)
-		}
-	}
-	// check runtime can be modified
-	if req.RuntimeCredential != nil {
-		err = ValidateCredential(
-			ctx,
-			"",
-			runtime.Provider,
-			runtime.RuntimeUrl,
-			req.RuntimeCredential.GetValue(),
-			runtime.Zone)
-		if err != nil {
-			if gerr.IsGRPCError(err) {
-				return nil, err
-			} else {
-				return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorValidateFailed)
-			}
-		}
-	}
+
 	if runtime.Status == constants.StatusDeleted {
-		logger.Error(ctx, "runtime has been deleted [%s]", runtimeId)
-		return nil, gerr.NewWithDetail(ctx, gerr.FailedPrecondition, err, gerr.ErrorResourceAlreadyDeleted, runtimeId)
-	}
-	// update runtime
-	err = updateRuntime(ctx, req)
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorModifyResourcesFailed)
+		logger.Error(ctx, "Runtime [%s] has been deleted", runtimeId)
+		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorResourceAlreadyDeleted, runtimeId)
 	}
 
-	if req.GetLabels() != nil {
-		err = labelutil.SyncRuntimeLabels(ctx, runtimeId, req.GetLabels().GetValue())
+	attributes := manager.BuildUpdateAttributes(req, constants.ColumnName, constants.ColumnDescription)
+	attributes[constants.ColumnStatusTime] = time.Now()
+
+	runtimeCredentialId := req.GetRuntimeCredentialId().GetValue()
+	if len(runtimeCredentialId) > 0 {
+		runtimeCredential, err := CheckRuntimeCredentialPermission(ctx, runtimeCredentialId)
 		if err != nil {
 			return nil, err
 		}
+		if runtimeCredential.Status == constants.StatusDeleted {
+			logger.Error(ctx, "Runtime credential [%s] has been deleted", runtimeCredentialId)
+			return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorResourceAlreadyDeleted, runtimeCredentialId)
+		}
+
+		err = ValidateRuntime(ctx, runtime.RuntimeId, runtime.Zone, runtimeCredential, false)
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorModifyResourceFailed, runtimeId)
+		}
+
+		attributes[constants.ColumnRuntimeCredentialId] = runtimeCredentialId
 	}
 
-	// update runtime credential
-	if req.RuntimeCredential != nil {
-		err := updateRuntimeCredential(ctx, runtime.RuntimeCredentialId, runtime.Provider, req.RuntimeCredential.GetValue())
-		if err != nil {
-			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorModifyResourcesFailed)
-		}
+	_, err = pi.Global().DB(ctx).
+		Update(constants.TableRuntime).
+		SetMap(attributes).
+		Where(db.Eq(constants.ColumnRuntimeId, runtimeId)).
+		Exec()
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorModifyResourceFailed, runtimeId)
 	}
 
 	res := &pb.ModifyRuntimeResponse{
@@ -236,7 +240,7 @@ func (p *Server) ModifyRuntime(ctx context.Context, req *pb.ModifyRuntimeRequest
 
 func (p *Server) DeleteRuntimes(ctx context.Context, req *pb.DeleteRuntimesRequest) (*pb.DeleteRuntimesResponse, error) {
 	runtimeIds := req.GetRuntimeId()
-	_, err := CheckRuntimesPermission(ctx, runtimeIds)
+	runtimes, err := CheckRuntimesPermission(ctx, runtimeIds)
 	if err != nil {
 		return nil, err
 	}
@@ -245,26 +249,42 @@ func (p *Server) DeleteRuntimes(ctx context.Context, req *pb.DeleteRuntimesReque
 	if err != nil {
 		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDeleteResourcesFailed)
 	}
-	clusters, err := clusterClient.DescribeClusters(ctx, &pb.DescribeClustersRequest{
-		RuntimeId: runtimeIds,
-		Status: []string{
-			constants.StatusActive,
-			constants.StatusStopped,
-			constants.StatusSuspended,
-			constants.StatusPending,
-		},
-	})
-	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDeleteResourcesFailed)
+	for _, runtime := range runtimes {
+		if runtime.Status == constants.StatusDeleted {
+			logger.Error(ctx, "Runtime [%s] has been deleted", runtime.RuntimeId)
+			return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorResourceAlreadyDeleted, runtime.RuntimeId)
+		}
+
+		// There can be no cluster in the runtime
+		request := &pb.DescribeClustersRequest{
+			RuntimeId: []string{runtime.RuntimeId},
+			Status: []string{
+				constants.StatusActive,
+				constants.StatusStopped,
+				constants.StatusSuspended,
+				constants.StatusPending,
+			},
+		}
+		var response *pb.DescribeClustersResponse
+		if runtime.Debug {
+			response, err = clusterClient.DescribeDebugClusters(ctx, request)
+		} else {
+			response, err = clusterClient.DescribeClusters(ctx, request)
+		}
+
+		if response.TotalCount > 0 {
+			err = fmt.Errorf("there are still [%d] clusters in the runtime [%s]", response.TotalCount, runtime.RuntimeId)
+			return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorDeleteResourcesFailed)
+		}
 	}
 
-	if clusters.TotalCount > 0 {
-		err = fmt.Errorf("there are still [%d] clusters in the runtime", clusters.TotalCount)
-		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorDeleteResourcesFailed)
-	}
-
-	// deleted runtime
-	err = deleteRuntimes(ctx, runtimeIds)
+	// deleted runtimes
+	_, err = pi.Global().DB(ctx).
+		Update(constants.TableRuntime).
+		Set(constants.ColumnStatus, constants.StatusDeleted).
+		Set(constants.ColumnStatusTime, time.Now()).
+		Where(db.Eq(constants.ColumnRuntimeId, runtimeIds)).
+		Exec()
 	if err != nil {
 		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDeleteResourcesFailed)
 	}
@@ -275,30 +295,271 @@ func (p *Server) DeleteRuntimes(ctx context.Context, req *pb.DeleteRuntimesReque
 	return res, nil
 }
 
-func (p *Server) DescribeRuntimeProviderZones(ctx context.Context, req *pb.DescribeRuntimeProviderZonesRequest) (*pb.DescribeRuntimeProviderZonesResponse, error) {
+func (p *Server) CreateRuntimeCredential(ctx context.Context, req *pb.CreateRuntimeCredentialRequest) (*pb.CreateRuntimeCredentialResponse, error) {
+	return p.createRuntimeCredential(ctx, req, false)
+}
+
+func (p *Server) CreateDebugRuntimeCredential(ctx context.Context, req *pb.CreateRuntimeCredentialRequest) (*pb.CreateRuntimeCredentialResponse, error) {
+	return p.createRuntimeCredential(ctx, req, true)
+}
+
+func (p *Server) createRuntimeCredential(ctx context.Context, req *pb.CreateRuntimeCredentialRequest, debug bool) (*pb.CreateRuntimeCredentialResponse, error) {
+	s := ctxutil.GetSender(ctx)
+
+	runtimeCredentialId := models.NewRuntimeCredentialId()
 	provider := req.Provider.GetValue()
-	url := req.RuntimeUrl.GetValue()
-	credential := req.RuntimeCredential.GetValue()
-	err := ValidateCredential(ctx, "", provider, url, credential, "")
+	runtimeUrl := req.RuntimeUrl.GetValue()
+	runtimeCredentialContent := req.RuntimeCredentialContent.GetValue()
+
+	runtimeCredential := &models.RuntimeCredential{
+		RuntimeUrl:               runtimeUrl,
+		Provider:                 provider,
+		RuntimeCredentialContent: runtimeCredentialContent,
+	}
+	err := ValidateRuntime(ctx, "", "", runtimeCredential, false)
 	if err != nil {
-		if gerr.IsGRPCError(err) {
-			return nil, err
-		} else {
-			return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorValidateFailed)
+		return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorCreateResourcesFailed)
+	}
+
+	content, err := decodeRuntimeCredentialContent(provider, runtimeCredentialContent)
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorCreateResourcesFailed)
+	}
+
+	query := pi.Global().DB(ctx).
+		Select(models.RuntimeCredentialColumns...).
+		From(constants.TableRuntimeCredential).
+		Where(db.Eq(constants.ColumnRuntimeUrl, req.GetRuntimeUrl().GetValue())).
+		Where(db.Eq(constants.ColumnRuntimeCredentialContent, content)).
+		Where(db.Eq(constants.ColumnProvider, req.GetProvider().GetValue())).
+		Where(db.Eq(constants.ColumnDebug, debug)).
+		Where(db.Eq(constants.ColumnOwner, s.GetOwnerPath().Owner())).
+		Where(db.Eq(constants.ColumnOwnerPath, s.GetOwnerPath()))
+
+	count, err := query.Count()
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorCreateResourcesFailed)
+	}
+	if count > 0 {
+		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorRuntimeCredentialExists)
+	}
+
+	newRuntimeCredential := models.NewRuntimeCredential(
+		runtimeCredentialId,
+		req.GetName().GetValue(),
+		req.GetDescription().GetValue(),
+		req.GetRuntimeUrl().GetValue(),
+		content,
+		req.GetProvider().GetValue(),
+		s.GetOwnerPath(),
+		debug,
+	)
+
+	_, err = pi.Global().DB(ctx).
+		InsertInto(constants.TableRuntimeCredential).
+		Record(newRuntimeCredential).
+		Exec()
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorCreateResourcesFailed)
+	}
+
+	res := &pb.CreateRuntimeCredentialResponse{
+		RuntimeCredentialId: pbutil.ToProtoString(newRuntimeCredential.RuntimeCredentialId),
+	}
+	return res, nil
+}
+
+func (p *Server) DescribeRuntimeCredentials(ctx context.Context, req *pb.DescribeRuntimeCredentialsRequest) (*pb.DescribeRuntimeCredentialsResponse, error) {
+	return p.describeRuntimeCredentials(ctx, req, false)
+}
+
+func (p *Server) DescribeDebugRuntimeCredentials(ctx context.Context, req *pb.DescribeRuntimeCredentialsRequest) (*pb.DescribeRuntimeCredentialsResponse, error) {
+	return p.describeRuntimeCredentials(ctx, req, true)
+}
+
+func (p *Server) describeRuntimeCredentials(ctx context.Context, req *pb.DescribeRuntimeCredentialsRequest, debug bool) (*pb.DescribeRuntimeCredentialsResponse, error) {
+	offset := pbutil.GetOffsetFromRequest(req)
+	limit := pbutil.GetLimitFromRequest(req)
+
+	var runtimeCredentials []*models.RuntimeCredential
+	var count uint32
+	query := pi.Global().DB(ctx).
+		Select(models.RuntimeCredentialColumns...).
+		From(constants.TableRuntimeCredential).
+		Offset(offset).
+		Limit(limit).
+		Where(manager.BuildPermissionFilter(ctx)).
+		Where(manager.BuildFilterConditions(req, constants.TableRuntimeCredential))
+	query = query.Where(db.Eq(constants.ColumnDebug, debug))
+	query = manager.AddQueryOrderDir(query, req, constants.ColumnCreateTime)
+	_, err := query.Load(&runtimeCredentials)
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+	}
+
+	count, err = query.Count()
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+	}
+
+	// encrypt runtime credential contents
+	for _, runtimeCredential := range runtimeCredentials {
+		runtimeCredential.RuntimeCredentialContent = "******"
+	}
+
+	res := &pb.DescribeRuntimeCredentialsResponse{
+		RuntimeCredentialSet: models.RuntimeCredentialToPbs(runtimeCredentials),
+		TotalCount:           count,
+	}
+	return res, nil
+}
+
+func (p *Server) DeleteRuntimeCredentials(ctx context.Context, req *pb.DeleteRuntimeCredentialsRequest) (*pb.DeleteRuntimeCredentialsResponse, error) {
+	runtimeCredentialIds := req.GetRuntimeCredentialId()
+	runtimeCredentials, err := CheckRuntimeCredentialsPermission(ctx, runtimeCredentialIds)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, runtimeCredential := range runtimeCredentials {
+		if runtimeCredential.Status == constants.StatusDeleted {
+			logger.Info(ctx, "Runtime credential [%s] has been deleted", runtimeCredential.RuntimeCredentialId)
+			continue
+		}
+
+		count, err := pi.Global().DB(ctx).
+			Select(models.RuntimeCredentialColumns...).
+			From(constants.TableRuntime).
+			Where(db.Eq(constants.ColumnRuntimeCredentialId, runtimeCredential.RuntimeCredentialId)).
+			Where(db.Eq(constants.ColumnStatus, constants.StatusActive)).
+			Count()
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDeleteResourcesFailed)
+		}
+		if count > 0 {
+			err = fmt.Errorf("there are still [%d] runtimes use credential [%s]", count, runtimeCredential.RuntimeCredentialId)
+			return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorDeleteResourcesFailed)
 		}
 	}
 
-	providerInterface, err := plugins.GetProviderPlugin(ctx, provider)
+	_, err = pi.Global().DB(ctx).
+		Update(constants.TableRuntimeCredential).
+		Set(constants.ColumnStatus, constants.StatusDeleted).
+		Set(constants.ColumnStatusTime, time.Now()).
+		Where(db.Eq(constants.ColumnRuntimeCredentialId, runtimeCredentialIds)).
+		Exec()
 	if err != nil {
-		return nil, gerr.NewWithDetail(ctx, gerr.NotFound, err, gerr.ErrorProviderNotFound, provider)
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDeleteResourcesFailed)
 	}
-	zones, err := providerInterface.DescribeRuntimeProviderZones(ctx, url, credential)
+
+	res := &pb.DeleteRuntimeCredentialsResponse{
+		RuntimeCredentialId: runtimeCredentialIds,
+	}
+	return res, nil
+}
+
+func (p *Server) ModifyRuntimeCredential(ctx context.Context, req *pb.ModifyRuntimeCredentialRequest) (*pb.ModifyRuntimeCredentialResponse, error) {
+	runtimeCredentialId := req.GetRuntimeCredentialId().GetValue()
+	runtimeCredentialContent := req.GetRuntimeCredentialContent().GetValue()
+
+	runtimeCredential, err := CheckRuntimeCredentialPermission(ctx, runtimeCredentialId)
+	if err != nil {
+		return nil, err
+	}
+
+	if runtimeCredential.Status == constants.StatusDeleted {
+		logger.Error(ctx, "Runtime credential [%s] has been deleted", runtimeCredentialId)
+		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorResourceAlreadyDeleted, runtimeCredentialId)
+	}
+
+	attributes := manager.BuildUpdateAttributes(req, constants.ColumnName, constants.ColumnDescription)
+	attributes[constants.ColumnStatusTime] = time.Now()
+
+	if len(runtimeCredentialContent) > 0 {
+		var runtimes []*models.Runtime
+		query := pi.Global().DB(ctx).
+			Select(models.RuntimeColumns...).
+			From(constants.TableRuntime).
+			Where(db.Eq(constants.ColumnRuntimeCredentialId, runtimeCredentialId)).
+			Where(db.Eq(constants.ColumnStatus, constants.StatusActive))
+		_, err = query.Load(&runtimes)
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorModifyResourceFailed, runtimeCredentialId)
+		}
+
+		for _, runtime := range runtimes {
+			newRuntimeCredential := &models.RuntimeCredential{
+				RuntimeUrl:               runtimeCredential.RuntimeUrl,
+				RuntimeCredentialContent: runtimeCredentialContent,
+				Provider:                 runtimeCredential.Provider,
+			}
+			err = ValidateRuntime(ctx, runtime.RuntimeId, runtime.Zone, newRuntimeCredential, false)
+			if err != nil {
+				return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorModifyResourceFailed, runtimeCredentialId)
+			}
+		}
+
+		newContent, err := decodeRuntimeCredentialContent(runtimeCredential.Provider, runtimeCredentialContent)
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorModifyResourceFailed, runtimeCredentialId)
+		}
+		attributes[constants.ColumnRuntimeCredentialContent] = newContent
+	}
+
+	_, err = pi.Global().DB(ctx).
+		Update(constants.TableRuntimeCredential).
+		SetMap(attributes).
+		Where(db.Eq(constants.ColumnRuntimeCredentialId, runtimeCredentialId)).
+		Exec()
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorModifyResourceFailed, runtimeCredentialId)
+	}
+
+	res := &pb.ModifyRuntimeCredentialResponse{
+		RuntimeCredentialId: req.GetRuntimeCredentialId(),
+	}
+
+	return res, nil
+}
+
+func (p *Server) ValidateRuntimeCredential(ctx context.Context, req *pb.ValidateRuntimeCredentialRequest) (*pb.ValidateRuntimeCredentialResponse, error) {
+	runtimeCredential := &models.RuntimeCredential{
+		RuntimeUrl:               req.GetRuntimeUrl().GetValue(),
+		RuntimeCredentialContent: req.GetRuntimeCredentialContent().GetValue(),
+		Provider:                 req.GetProvider().GetValue(),
+	}
+	err := ValidateRuntime(ctx, "", "", runtimeCredential, false)
+	if err != nil {
+		return &pb.ValidateRuntimeCredentialResponse{
+			Ok: pbutil.ToProtoBool(false),
+		}, gerr.NewWithDetail(ctx, gerr.InvalidArgument, err, gerr.ErrorValidateFailed)
+	}
+	return &pb.ValidateRuntimeCredentialResponse{
+		Ok: pbutil.ToProtoBool(true),
+	}, nil
+}
+
+func (p *Server) DescribeRuntimeProviderZones(ctx context.Context, req *pb.DescribeRuntimeProviderZonesRequest) (*pb.DescribeRuntimeProviderZonesResponse, error) {
+	runtimeCredentialId := req.GetRuntimeCredentialId().GetValue()
+	runtimeCredential, err := CheckRuntimeCredentialPermission(ctx, runtimeCredentialId)
+	if err != nil {
+		return nil, err
+	}
+	providerClient, err := providerclient.NewRuntimeProviderManagerClient()
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
+	}
+
+	response, err := providerClient.DescribeZones(ctx, &pb.DescribeZonesRequest{
+		Provider:          pbutil.ToProtoString(runtimeCredential.Provider),
+		RuntimeCredential: models.RuntimeCredentialToPb(runtimeCredential),
+	})
 	if err != nil {
 		return nil, gerr.NewWithDetail(ctx, gerr.PermissionDenied, err, gerr.ErrorDescribeResourceFailed)
 	}
 	return &pb.DescribeRuntimeProviderZonesResponse{
-		Provider: req.Provider,
-		Zone:     zones,
+		RuntimeCredentialId: req.GetRuntimeCredentialId(),
+		Zone:                response.Zones,
 	}, nil
 }
 

@@ -29,13 +29,13 @@ import (
 	staticSwaggerUI "openpitrix.io/openpitrix/pkg/apigateway/swagger-ui"
 	"openpitrix.io/openpitrix/pkg/config"
 	"openpitrix.io/openpitrix/pkg/constants"
-	"openpitrix.io/openpitrix/pkg/gerr"
 	"openpitrix.io/openpitrix/pkg/logger"
 	"openpitrix.io/openpitrix/pkg/manager"
 	"openpitrix.io/openpitrix/pkg/pb"
 	"openpitrix.io/openpitrix/pkg/pi"
+	"openpitrix.io/openpitrix/pkg/service/service_config"
 	"openpitrix.io/openpitrix/pkg/topic"
-	"openpitrix.io/openpitrix/pkg/util/senderutil"
+	"openpitrix.io/openpitrix/pkg/util/ctxutil"
 	"openpitrix.io/openpitrix/pkg/version"
 )
 
@@ -60,16 +60,21 @@ func Serve(cfg *config.Config) {
 	logger.Info(nil, "Task service http://%s:%d", constants.TaskManagerHost, constants.TaskManagerPort)
 	logger.Info(nil, "Repo indexer service http://%s:%d", constants.RepoIndexerHost, constants.RepoIndexerPort)
 	logger.Info(nil, "Category service http://%s:%d", constants.CategoryManagerHost, constants.CategoryManagerPort)
-	logger.Info(nil, "IAM service http://%s:%d", constants.IAMServiceHost, constants.IAMServicePort)
+	logger.Info(nil, "Account service http://%s:%d", constants.AccountServiceHost, constants.AccountServicePort)
+	logger.Info(nil, "AM service http://%s:%d", constants.AMServiceHost, constants.AMServicePort)
 	logger.Info(nil, "Api service start http://%s:%d", constants.ApiGatewayHost, constants.ApiGatewayPort)
 	logger.Info(nil, "Market service http://%s:%d", constants.MarketManagerHost, constants.MarketManagerPort)
 	logger.Info(nil, "Attachment service http://%s:%d", constants.AttachmentManagerHost, constants.AttachmentManagerPort)
+	logger.Info(nil, "Isv service http://%s:%d", constants.IsvManagerHost, constants.IsvManagerPort)
+	logger.Info(nil, "Service config http://localhost:%d", constants.ServiceConfigPort)
 
 	cfg.Mysql.Disable = true
 	pi.SetGlobal(cfg)
 	s := Server{
 		cfg.IAM,
 	}
+
+	go service_config.Serve(cfg)
 
 	if err := s.run(); err != nil {
 		logger.Critical(nil, "Api gateway run failed: %+v", err)
@@ -78,8 +83,7 @@ func Serve(cfg *config.Config) {
 }
 
 const (
-	Authorization = "Authorization"
-	RequestIdKey  = "X-Request-Id"
+	RequestIdKey = "X-Request-Id"
 )
 
 func log() gin.HandlerFunc {
@@ -121,42 +125,6 @@ func log() gin.HandlerFunc {
 	}
 }
 
-func serveMuxSetSender(mux *runtime.ServeMux, key string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-
-		if req.URL.Path == "/v1/oauth2/token" {
-			// skip auth sender
-			mux.ServeHTTP(w, req)
-			return
-		}
-
-		var err error
-		ctx := req.Context()
-		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-
-		auth := strings.SplitN(req.Header.Get(Authorization), " ", 2)
-		if auth[0] != "Bearer" {
-			err = gerr.New(ctx, gerr.Unauthenticated, gerr.ErrorAuthFailure)
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		sender, err := senderutil.Validate(key, auth[1])
-		if err != nil {
-			if err == senderutil.ErrExpired {
-				err = gerr.New(ctx, gerr.Unauthenticated, gerr.ErrorAccessTokenExpired)
-			} else {
-				err = gerr.New(ctx, gerr.Unauthenticated, gerr.ErrorAuthFailure)
-			}
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		req.Header.Set(senderutil.SenderKey, sender.ToJson())
-		req.Header.Del(Authorization)
-
-		mux.ServeHTTP(w, req)
-	})
-}
-
 func recovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
@@ -183,11 +151,14 @@ func handleSwagger() http.Handler {
 func (s *Server) run() error {
 	gin.SetMode(gin.ReleaseMode)
 
+	mainHandler := gin.WrapH(s.mainHandler())
+
 	r := gin.New()
 	r.Use(log())
 	r.Use(recovery())
 	r.Any("/swagger-ui/*filepath", gin.WrapH(handleSwagger()))
-	r.Any("/v1/*filepath", gin.WrapH(s.mainHandler()))
+	r.Any("/v1/*filepath", mainHandler)
+	r.Any("/api/*filepath", mainHandler)
 	r.Any("/attachments/*filepath", gin.WrapH(ServeAttachments("/attachments/")))
 
 	return r.Run(fmt.Sprintf(":%d", constants.ApiGatewayPort))
@@ -197,7 +168,7 @@ func (s *Server) mainHandler() http.Handler {
 	var gwmux = runtime.NewServeMux(
 		runtime.WithMetadata(func(ctx context.Context, req *http.Request) metadata.MD {
 			return metadata.Pairs(
-				senderutil.SenderKey, req.Header.Get(senderutil.SenderKey),
+				ctxutil.SenderKey, req.Header.Get(ctxutil.SenderKey),
 				RequestIdKey, req.Header.Get(RequestIdKey),
 			)
 		}),
@@ -228,10 +199,13 @@ func (s *Server) mainHandler() http.Handler {
 		fmt.Sprintf("%s:%d", constants.RepoIndexerHost, constants.RepoIndexerPort),
 	}, {
 		pb.RegisterTokenManagerHandlerFromEndpoint,
-		fmt.Sprintf("%s:%d", constants.IAMServiceHost, constants.IAMServicePort),
+		fmt.Sprintf("%s:%d", constants.AccountServiceHost, constants.AccountServicePort),
 	}, {
 		pb.RegisterAccountManagerHandlerFromEndpoint,
-		fmt.Sprintf("%s:%d", constants.IAMServiceHost, constants.IAMServicePort),
+		fmt.Sprintf("%s:%d", constants.AccountServiceHost, constants.AccountServicePort),
+	}, {
+		pb.RegisterAccessManagerHandlerFromEndpoint,
+		fmt.Sprintf("%s:%d", constants.AccountServiceHost, constants.AccountServicePort),
 	}, {
 		pb.RegisterClusterManagerHandlerFromEndpoint,
 		fmt.Sprintf("%s:%d", constants.ClusterManagerHost, constants.ClusterManagerPort),
@@ -241,6 +215,12 @@ func (s *Server) mainHandler() http.Handler {
 	}, {
 		pb.RegisterAttachmentServiceHandlerFromEndpoint,
 		fmt.Sprintf("%s:%d", constants.AttachmentManagerHost, constants.AttachmentManagerPort),
+	}, {
+		pb.RegisterIsvManagerHandlerFromEndpoint,
+		fmt.Sprintf("%s:%d", constants.IsvManagerHost, constants.IsvManagerPort),
+	}, {
+		pb.RegisterServiceConfigHandlerFromEndpoint,
+		fmt.Sprintf("localhost:%d", constants.ServiceConfigPort),
 	}} {
 		err = r.f(context.Background(), gwmux, r.endpoint, opts)
 		if err != nil {
@@ -253,7 +233,7 @@ func (s *Server) mainHandler() http.Handler {
 	tm := topic.NewTopicManager(pi.Global().Etcd(nil))
 	go tm.Run()
 
-	mux.Handle("/", serveMuxSetSender(gwmux, s.IAMConfig.SecretKey))
+	mux.Handle("/", httpAuth(gwmux, s.IAMConfig.SecretKey))
 	mux.HandleFunc("/v1/io", tm.HandleEvent(s.IAMConfig.SecretKey))
 
 	return formWrapper(mux)

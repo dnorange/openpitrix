@@ -25,7 +25,6 @@ const (
 	TableRepoSelector        = "repo_selector"
 	TableRuntime             = "runtime"
 	TableRuntimeCredential   = "runtime_credential"
-	TableRuntimeLabel        = "runtime_label"
 	TableTask                = "task"
 	TableAttachment          = "attachment"
 
@@ -39,5 +38,7 @@ const (
 	TableMarket     = "market"
 	TableMarketUser = "market_user"
 
-	TableAppVersionAudit = "app_version_audit"
+	TableAppVersionAudit  = "app_version_audit"
+	TableAppVersionReview = "app_version_review"
+	TableVendorVerifyInfo = "vendor_verify_info"
 )

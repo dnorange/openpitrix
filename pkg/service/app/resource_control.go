@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"openpitrix.io/openpitrix/pkg/client/isv"
 	"openpitrix.io/openpitrix/pkg/constants"
 	"openpitrix.io/openpitrix/pkg/db"
 	"openpitrix.io/openpitrix/pkg/gerr"
@@ -20,8 +21,8 @@ import (
 	"openpitrix.io/openpitrix/pkg/pb"
 	"openpitrix.io/openpitrix/pkg/pi"
 	"openpitrix.io/openpitrix/pkg/service/category/categoryutil"
+	"openpitrix.io/openpitrix/pkg/util/ctxutil"
 	"openpitrix.io/openpitrix/pkg/util/pbutil"
-	"openpitrix.io/openpitrix/pkg/util/senderutil"
 	"openpitrix.io/openpitrix/pkg/util/stringutil"
 )
 
@@ -29,6 +30,7 @@ type Action int32
 
 const (
 	Submit Action = iota
+	Review
 	Cancel
 	Release
 	Delete
@@ -43,7 +45,8 @@ const (
 var VersionFiniteStatusMachine = map[Action][]string{
 	Modify:  {constants.StatusDraft, constants.StatusRejected, constants.StatusActive},
 	Submit:  {constants.StatusDraft, constants.StatusRejected},
-	Cancel:  {constants.StatusSubmitted, constants.StatusPassed},
+	Review:  {constants.StatusSubmitted, constants.StatusInReview},
+	Cancel:  {constants.StatusSubmitted, constants.StatusInReview, constants.StatusPassed},
 	Release: {constants.StatusPassed},
 	Delete: {
 		constants.StatusSuspended,
@@ -51,8 +54,8 @@ var VersionFiniteStatusMachine = map[Action][]string{
 		constants.StatusPassed,
 		constants.StatusRejected,
 	},
-	Pass:    {constants.StatusSubmitted, constants.StatusRejected},
-	Reject:  {constants.StatusSubmitted},
+	Pass:    {constants.StatusInReview},
+	Reject:  {constants.StatusInReview},
 	Suspend: {constants.StatusActive},
 	Recover: {constants.StatusSuspended},
 }
@@ -66,6 +69,26 @@ func checkAppVersionHandlePermission(ctx context.Context, action Action, version
 	if !stringutil.StringIn(versionStatus, allowedStatus) {
 		return gerr.New(ctx, gerr.FailedPrecondition,
 			gerr.ErrorAppVersionIncorrectStatus, version.VersionId, versionStatus)
+	}
+	return nil
+}
+
+func checkModifyAppPermission(ctx context.Context, app *models.App) error {
+	if app.Status == constants.StatusDeleted {
+		return gerr.New(ctx, gerr.FailedPrecondition, gerr.ErrorResourceAlreadyDeleted, app.AppId)
+	}
+	count, err := pi.Global().DB(ctx).
+		Select("").
+		From(constants.TableAppVersion).
+		Where(db.Eq(constants.ColumnAppId, app.AppId)).
+		Where(db.Eq(constants.ColumnStatus, constants.StatusInReview)).
+		Where(db.Eq(constants.ColumnActive, app.Active)).
+		Count()
+	if err != nil {
+		return gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
+	}
+	if count > 0 {
+		return gerr.New(ctx, gerr.FailedPrecondition, gerr.ErrorAppVersionInReview)
 	}
 	return nil
 }
@@ -84,6 +107,41 @@ func getAppVersion(ctx context.Context, versionId string) (*models.AppVersion, e
 	return version, nil
 }
 
+func checkAppName(ctx context.Context, name string) error {
+	count, err := pi.Global().DB(ctx).
+		Select(models.AppColumns...).
+		From(constants.TableApp).
+		Where(db.Eq(constants.ColumnName, name)).
+		Where(db.Neq(constants.ColumnStatus, constants.StatusDeleted)).
+		Count()
+	if err != nil {
+		return gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
+	}
+	if count > 0 {
+		return gerr.New(ctx, gerr.PermissionDenied, gerr.ErrorAppNameExists, name)
+	}
+
+	return nil
+}
+
+func checkAppVersionName(ctx context.Context, appId, name string) error {
+	count, err := pi.Global().DB(ctx).
+		Select(models.AppVersionColumns...).
+		From(constants.TableAppVersion).
+		Where(db.Eq(constants.ColumnName, name)).
+		Where(db.Eq(constants.ColumnAppId, appId)).
+		Where(db.Neq(constants.ColumnStatus, constants.StatusDeleted)).
+		Count()
+	if err != nil {
+		return gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
+	}
+	if count > 0 {
+		return gerr.New(ctx, gerr.PermissionDenied, gerr.ErrorAppVersionExists, appId, name)
+	}
+
+	return nil
+}
+
 func insertVersion(ctx context.Context, version *models.AppVersion) error {
 	_, err := pi.Global().DB(ctx).
 		InsertInto(constants.TableAppVersion).
@@ -93,7 +151,7 @@ func insertVersion(ctx context.Context, version *models.AppVersion) error {
 		logger.Error(ctx, "Failed to insert version [%+v]", version)
 		return gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorCreateResourcesFailed)
 	}
-	err = addAppVersionAudit(ctx, version, constants.StatusDraft, constants.RoleDeveloper, "")
+	err = addAppVersionAudit(ctx, version, constants.StatusDraft, constants.OperatorTypeDeveloper, "")
 	if err != nil {
 		return err
 	}
@@ -358,6 +416,27 @@ func getLatestAppVersion(ctx context.Context, appId string, status ...string) (*
 	return appVersion, nil
 }
 
+func getVendorMap(ctx context.Context, userIds []string) (map[string]*pb.VendorVerifyInfo, error) {
+	userIds = stringutil.Unique(userIds)
+	var isvs []string
+	for _, uid := range userIds {
+		if stringutil.StringIn(uid, constants.InternalUsers) {
+			continue
+		}
+		isvs = append(isvs, uid)
+	}
+
+	vendorVerifyInfoSet, err := isv.GetVendorInfos(ctx, isvs)
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
+	}
+	var vendorMap = make(map[string]*pb.VendorVerifyInfo)
+	for _, v := range vendorVerifyInfoSet {
+		vendorMap[v.Owner.GetValue()] = v
+	}
+	return vendorMap, nil
+}
+
 func formatApp(ctx context.Context, app *models.App) (*pb.App, error) {
 	pbApp := models.AppToPb(app)
 
@@ -380,11 +459,21 @@ func getAppCategories(ctx context.Context, appId string) ([]*pb.ResourceCategory
 
 func formatAppSet(ctx context.Context, apps []*models.App, active bool) ([]*pb.App, error) {
 	var appIds []string
+	var userIds []string
 	for _, app := range apps {
 		appIds = append(appIds, app.AppId)
+		userIds = append(userIds, app.Isv)
 	}
 	var pbApps []*pb.App
 	appsVersionTypes, err := getAppsVersionTypes(ctx, appIds, active)
+	if err != nil {
+		return pbApps, err
+	}
+	rcMap, err := categoryutil.GetResourcesCategories(ctx, pi.Global().DB(ctx), appIds)
+	if err != nil {
+		return pbApps, err
+	}
+	vendorMap, err := getVendorMap(ctx, userIds)
 	if err != nil {
 		return pbApps, err
 	}
@@ -398,23 +487,127 @@ func formatAppSet(ctx context.Context, apps []*models.App, active bool) ([]*pb.A
 		if appVersionType, ok := appsVersionTypes[app.AppId]; ok {
 			pbApp.AppVersionTypes = pbutil.ToProtoString(appVersionType)
 		}
-
-		pbApps = append(pbApps, pbApp)
-	}
-	rcmap, err := categoryutil.GetResourcesCategories(ctx, pi.Global().DB(ctx), appIds)
-	if err != nil {
-		return pbApps, err
-	}
-	for _, pbApp := range pbApps {
-		if categorySet, ok := rcmap[pbApp.GetAppId().GetValue()]; ok {
+		if categorySet, ok := rcMap[app.AppId]; ok {
 			pbApp.CategorySet = categorySet
 		}
+		if vendor, ok := vendorMap[app.Isv]; ok {
+			pbApp.CompanyJoinTime = vendor.StatusTime
+			pbApp.CompanyName = vendor.CompanyName
+			pbApp.CompanyProfile = vendor.CompanyProfile
+			pbApp.CompanyWebsite = vendor.CompanyWebsite
+		}
+
+		pbApps = append(pbApps, pbApp)
 	}
 	return pbApps, nil
 }
 
+func loadAppNameMap(ctx context.Context, appIds []string) (map[string]string, error) {
+	var appNameMap = make(map[string]string)
+	if len(appIds) > 0 {
+		_, err := pi.Global().DB(ctx).
+			Select(constants.ColumnAppId, constants.ColumnName).
+			From(constants.TableApp).
+			Where(db.Eq(constants.ColumnAppId, appIds)).
+			Load(&appNameMap)
+		if err != nil {
+			return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+		}
+	}
+	return appNameMap, nil
+}
+
+func loadVersionMap(ctx context.Context, versionIds []string) (map[string]*models.AppVersion, error) {
+	var versions []*models.AppVersion
+	versionMaps := make(map[string]*models.AppVersion)
+	_, err := pi.Global().DB(ctx).
+		Select(models.AppVersionColumns...).
+		From(constants.TableAppVersion).
+		Where(db.Eq(constants.ColumnVersionId, versionIds)).
+		Load(&versions)
+	if err != nil {
+		return nil, gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorDescribeResourcesFailed)
+	}
+
+	for _, version := range versions {
+		versionMaps[version.VersionId] = version
+	}
+
+	return versionMaps, nil
+}
+
+func formatAppVersionReviewSet(ctx context.Context, appVersionReviews []*models.AppVersionReview) ([]*pb.AppVersionReview, error) {
+	var (
+		appIds     []string
+		versionIds []string
+	)
+	for _, a := range appVersionReviews {
+		appIds = append(appIds, a.AppId)
+		versionIds = append(versionIds, a.VersionId)
+	}
+	appNameMap, err := loadAppNameMap(ctx, appIds)
+	if err != nil {
+		return nil, err
+	}
+	versionMap, err := loadVersionMap(ctx, versionIds)
+	if err != nil {
+		return nil, err
+	}
+	pbAvrs := models.AppVersionReviewsToPbs(appVersionReviews)
+	for _, a := range pbAvrs {
+		appId := a.GetAppId().GetValue()
+		versionId := a.GetVersionId().GetValue()
+		if appName, ok := appNameMap[appId]; ok {
+			a.AppName = pbutil.ToProtoString(appName)
+		}
+		if version, ok := versionMap[versionId]; ok {
+			a.VersionName = pbutil.ToProtoString(version.Name)
+			a.VersionType = pbutil.ToProtoString(version.Type)
+		}
+	}
+
+	return pbAvrs, nil
+}
+
+func formatAppVersionAuditSet(ctx context.Context, appVersionAudits []*models.AppVersionAudit) ([]*pb.AppVersionAudit, error) {
+	var (
+		appIds     []string
+		versionIds []string
+	)
+	for _, a := range appVersionAudits {
+		appIds = append(appIds, a.AppId)
+		versionIds = append(versionIds, a.VersionId)
+	}
+	appNameMap, err := loadAppNameMap(ctx, appIds)
+	if err != nil {
+		return nil, err
+	}
+	versionMap, err := loadVersionMap(ctx, versionIds)
+	if err != nil {
+		return nil, err
+	}
+	pbAvas := models.AppVersionAuditsToPbs(appVersionAudits)
+	for _, a := range pbAvas {
+		appId := a.GetAppId().GetValue()
+		versionId := a.GetVersionId().GetValue()
+		if appName, ok := appNameMap[appId]; ok {
+			a.AppName = pbutil.ToProtoString(appName)
+		}
+		if version, ok := versionMap[versionId]; ok {
+			a.VersionName = pbutil.ToProtoString(version.Name)
+			a.VersionType = pbutil.ToProtoString(version.Type)
+		}
+	}
+
+	return pbAvas, nil
+}
+
 func getAppsVersionTypes(ctx context.Context, appIds []string, active bool) (map[string]string, error) {
 	var appsVersionTypes = make(map[string]string)
+
+	if len(appIds) == 0 {
+		return appsVersionTypes, nil
+	}
 
 	_, err := pi.Global().DB(ctx).
 		Select(constants.ColumnAppId, "GROUP_CONCAT(DISTINCT type ORDER BY type SEPARATOR ',')").
@@ -561,10 +754,13 @@ func computeAppStatus(statusCountMap map[string]int32) string {
 	return constants.StatusDraft
 }
 
-func addAppVersionAudit(ctx context.Context, version *models.AppVersion, status, role, message string) error {
-	s := senderutil.GetSenderFromContext(ctx)
-	var versionAudit = models.NewAppVersionAudit(version.VersionId, version.AppId, status, s.UserId, role)
+func addAppVersionAudit(ctx context.Context, version *models.AppVersion, status, operatorType, message string) error {
+	s := ctxutil.GetSender(ctx)
+	versionAudit := models.NewAppVersionAudit(version.VersionId, version.AppId, status, s.UserId, operatorType, s.GetOwnerPath())
 	versionAudit.Message = message
+	if version.Status == constants.StatusSubmitted {
+		versionAudit.ReviewId = version.ReviewId
+	}
 
 	_, err := pi.Global().DB(ctx).
 		InsertInto(constants.TableAppVersionAudit).
@@ -608,7 +804,7 @@ func matchPackageFailedError(err error, res *pb.ValidatePackageResponse) {
 			errorDetails[matched[1]] = matched[2]
 		}
 
-	// Devkit erros
+		// Devkit errors
 	case strings.HasPrefix(errStr, "[package.json] not in base directory"):
 
 		errorDetails["package.json"] = "not found"

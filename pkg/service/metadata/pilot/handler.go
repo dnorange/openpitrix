@@ -197,7 +197,7 @@ func (p *Server) FrontgateChannel(ch pbpilot.PilotServiceForFrontgate_FrontgateC
 
 	info, err := c.GetFrontgateConfig(&pbtypes.Empty{})
 	if err != nil {
-		logger.Debug(nil, "%+v", err)
+		logger.Error(nil, "Get frontgate config failed: %+v", err)
 		return err
 	}
 
@@ -354,6 +354,54 @@ func (p *Server) DeregisterMetadata(ctx context.Context, arg *pbtypes.SubTask_De
 	}()
 
 	_, err = client.DeregisterMetadata(arg)
+	if err != nil {
+		logger.Warn(nil, "%+v", err)
+		return nil, err
+	}
+
+	return &pbtypes.Empty{}, nil
+}
+
+func (p *Server) RegisterMetadataMapping(ctx context.Context, arg *pbtypes.SubTask_RegisterMetadata) (*pbtypes.Empty, error) {
+	logger.Info(nil, funcutil.CallerName(1))
+
+	client, err := p.fgClientMgr.GetClient(arg.FrontgateId)
+	if err != nil {
+		logger.Warn(nil, "%+v", err)
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil && p.fgClientMgr.IsFrontgateShutdownError(err) {
+			p.fgClientMgr.CloseClient(client.info.Id, client.info.NodeId)
+		}
+	}()
+
+	_, err = client.RegisterMetadataMapping(arg)
+	if err != nil {
+		logger.Warn(nil, "%+v", err)
+		return nil, err
+	}
+
+	return &pbtypes.Empty{}, nil
+}
+
+func (p *Server) DeregisterMetadataMapping(ctx context.Context, arg *pbtypes.SubTask_DeregisterMetadata) (*pbtypes.Empty, error) {
+	logger.Info(nil, funcutil.CallerName(1))
+
+	client, err := p.fgClientMgr.GetClient(arg.FrontgateId)
+	if err != nil {
+		logger.Warn(nil, "%+v", err)
+		return nil, err
+	}
+
+	defer func() {
+		if err != nil && p.fgClientMgr.IsFrontgateShutdownError(err) {
+			p.fgClientMgr.CloseClient(client.info.Id, client.info.NodeId)
+		}
+	}()
+
+	_, err = client.DeregisterMetadataMapping(arg)
 	if err != nil {
 		logger.Warn(nil, "%+v", err)
 		return nil, err
@@ -533,6 +581,62 @@ func (p *Server) HandleSubtask(ctx context.Context, msg *pbtypes.SubTaskMessage)
 		x.TaskId = msg.TaskId
 
 		reply, err := p.DeregisterMetadata(ctx, &x)
+
+		if err != nil {
+			p.taskStatusMgr.PutStatus(pbtypes.SubTaskStatus{
+				TaskId: x.TaskId,
+				Status: constants.StatusFailed,
+			})
+			return nil, err
+		}
+
+		p.taskStatusMgr.PutStatus(pbtypes.SubTaskStatus{
+			TaskId: x.TaskId,
+			Status: constants.StatusSuccessful,
+		})
+		return reply, nil
+
+	case pbtypes.SubTaskAction_RegisterMetadataMapping.String():
+
+		var x pbtypes.SubTask_RegisterMetadata
+		err := json.Unmarshal([]byte(msg.Directive), &x)
+		if err != nil {
+			logger.Warn(nil, "%+v", err)
+			return nil, err
+		}
+
+		x.Action = msg.Action
+		x.TaskId = msg.TaskId
+
+		reply, err := p.RegisterMetadataMapping(ctx, &x)
+
+		if err != nil {
+			p.taskStatusMgr.PutStatus(pbtypes.SubTaskStatus{
+				TaskId: x.TaskId,
+				Status: constants.StatusFailed,
+			})
+			return nil, err
+		}
+
+		p.taskStatusMgr.PutStatus(pbtypes.SubTaskStatus{
+			TaskId: x.TaskId,
+			Status: constants.StatusSuccessful,
+		})
+		return reply, nil
+
+	case pbtypes.SubTaskAction_DeregisterMetadataMapping.String():
+
+		var x pbtypes.SubTask_DeregisterMetadata
+		err := json.Unmarshal([]byte(msg.Directive), &x)
+		if err != nil {
+			logger.Warn(nil, "%+v", err)
+			return nil, err
+		}
+
+		x.Action = msg.Action
+		x.TaskId = msg.TaskId
+
+		reply, err := p.DeregisterMetadataMapping(ctx, &x)
 
 		if err != nil {
 			p.taskStatusMgr.PutStatus(pbtypes.SubTaskStatus{

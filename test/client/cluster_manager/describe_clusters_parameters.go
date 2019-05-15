@@ -63,34 +63,91 @@ for the describe clusters operation typically these are written to a http.Reques
 */
 type DescribeClustersParams struct {
 
-	/*AppID*/
+	/*AppID
+	  app ids.
+
+	*/
 	AppID []string
-	/*ClusterID*/
+	/*ClusterID
+	  cluster ids.
+
+	*/
 	ClusterID []string
-	/*ClusterType*/
+	/*ClusterType
+	  cluster type, frontgate or normal cluster.
+
+	*/
 	ClusterType *string
-	/*ExternalClusterID*/
+	/*CreatedDate
+	  cluster created duration eg.[1 day].
+
+	*/
+	CreatedDate *int64
+	/*DisplayColumns
+	  select column to display.
+
+	*/
+	DisplayColumns []string
+	/*ExternalClusterID
+	  external cluster id.
+
+	*/
 	ExternalClusterID *string
-	/*FrontgateID*/
+	/*FrontgateID
+	  frontgate ids.
+
+	*/
 	FrontgateID []string
-	/*Limit*/
+	/*Limit
+	  data limit per page, default value 20, max value 200.
+
+	*/
 	Limit *int64
-	/*Offset*/
+	/*Offset
+	  data offset, default 0.
+
+	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  owner.
+
+	*/
 	Owner []string
-	/*Reverse*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
 	Reverse *bool
-	/*RuntimeID*/
+	/*RuntimeID
+	  runtime ids.
+
+	*/
 	RuntimeID []string
-	/*SearchWord*/
+	/*SearchWord
+	  query key, support these fields(cluster_id, app_id, version_id, status, runtime_id, frontgate_id, owner, cluster_type).
+
+	*/
 	SearchWord *string
-	/*SortKey*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
 	SortKey *string
-	/*Status*/
+	/*Status
+	  cluster status eg.[active|used|enabled|disabled|deleted|stopped|ceased].
+
+	*/
 	Status []string
-	/*VersionID*/
+	/*VersionID
+	  version ids.
+
+	*/
 	VersionID []string
+	/*WithDetail
+	  get cluster detail info or not.
+
+	*/
+	WithDetail *bool
 
 	timeout    time.Duration
 	Context    context.Context
@@ -161,6 +218,28 @@ func (o *DescribeClustersParams) WithClusterType(clusterType *string) *DescribeC
 // SetClusterType adds the clusterType to the describe clusters params
 func (o *DescribeClustersParams) SetClusterType(clusterType *string) {
 	o.ClusterType = clusterType
+}
+
+// WithCreatedDate adds the createdDate to the describe clusters params
+func (o *DescribeClustersParams) WithCreatedDate(createdDate *int64) *DescribeClustersParams {
+	o.SetCreatedDate(createdDate)
+	return o
+}
+
+// SetCreatedDate adds the createdDate to the describe clusters params
+func (o *DescribeClustersParams) SetCreatedDate(createdDate *int64) {
+	o.CreatedDate = createdDate
+}
+
+// WithDisplayColumns adds the displayColumns to the describe clusters params
+func (o *DescribeClustersParams) WithDisplayColumns(displayColumns []string) *DescribeClustersParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe clusters params
+func (o *DescribeClustersParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithExternalClusterID adds the externalClusterID to the describe clusters params
@@ -284,6 +363,17 @@ func (o *DescribeClustersParams) SetVersionID(versionID []string) {
 	o.VersionID = versionID
 }
 
+// WithWithDetail adds the withDetail to the describe clusters params
+func (o *DescribeClustersParams) WithWithDetail(withDetail *bool) *DescribeClustersParams {
+	o.SetWithDetail(withDetail)
+	return o
+}
+
+// SetWithDetail adds the withDetail to the describe clusters params
+func (o *DescribeClustersParams) SetWithDetail(withDetail *bool) {
+	o.WithDetail = withDetail
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *DescribeClustersParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -322,6 +412,30 @@ func (o *DescribeClustersParams) WriteToRequest(r runtime.ClientRequest, reg str
 			}
 		}
 
+	}
+
+	if o.CreatedDate != nil {
+
+		// query param created_date
+		var qrCreatedDate int64
+		if o.CreatedDate != nil {
+			qrCreatedDate = *o.CreatedDate
+		}
+		qCreatedDate := swag.FormatInt64(qrCreatedDate)
+		if qCreatedDate != "" {
+			if err := r.SetQueryParam("created_date", qCreatedDate); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
+		return err
 	}
 
 	if o.ExternalClusterID != nil {
@@ -458,6 +572,22 @@ func (o *DescribeClustersParams) WriteToRequest(r runtime.ClientRequest, reg str
 	// query array param version_id
 	if err := r.SetQueryParam("version_id", joinedVersionID...); err != nil {
 		return err
+	}
+
+	if o.WithDetail != nil {
+
+		// query param with_detail
+		var qrWithDetail bool
+		if o.WithDetail != nil {
+			qrWithDetail = *o.WithDetail
+		}
+		qWithDetail := swag.FormatBool(qrWithDetail)
+		if qWithDetail != "" {
+			if err := r.SetQueryParam("with_detail", qWithDetail); err != nil {
+				return err
+			}
+		}
+
 	}
 
 	if len(res) > 0 {

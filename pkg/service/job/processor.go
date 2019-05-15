@@ -9,7 +9,9 @@ import (
 
 	clusterclient "openpitrix.io/openpitrix/pkg/client/cluster"
 	jobclient "openpitrix.io/openpitrix/pkg/client/job"
+	providerclient "openpitrix.io/openpitrix/pkg/client/runtime_provider"
 	"openpitrix.io/openpitrix/pkg/constants"
+	"openpitrix.io/openpitrix/pkg/gerr"
 	"openpitrix.io/openpitrix/pkg/logger"
 	"openpitrix.io/openpitrix/pkg/models"
 	"openpitrix.io/openpitrix/pkg/pb"
@@ -82,40 +84,25 @@ func (p *Processor) Post(ctx context.Context) error {
 	}
 	switch p.Job.JobAction {
 	case constants.ActionCreateCluster:
-		providerInterface, err := plugins.GetProviderPlugin(ctx, p.Job.Provider)
+		err = p.UpdateClusterDetails(ctx)
 		if err != nil {
-			logger.Error(ctx, "No such provider [%s]. ", p.Job.Provider)
-			return err
-		}
-		err = providerInterface.UpdateClusterStatus(ctx, p.Job)
-		if err != nil {
-			logger.Error(ctx, "Executing job post processor failed: %+v", err)
+			logger.Error(ctx, "Update cluster details failed: %+v", err)
 			return err
 		}
 
 		err = clusterClient.ModifyClusterStatus(ctx, p.Job.ClusterId, constants.StatusActive)
 	case constants.ActionUpgradeCluster:
-		providerInterface, err := plugins.GetProviderPlugin(ctx, p.Job.Provider)
+		err = p.UpdateClusterDetails(ctx)
 		if err != nil {
-			logger.Error(ctx, "No such provider [%s]. ", p.Job.Provider)
-			return err
-		}
-		err = providerInterface.UpdateClusterStatus(ctx, p.Job)
-		if err != nil {
-			logger.Error(ctx, "Executing job post processor failed: %+v", err)
+			logger.Error(ctx, "Update cluster details failed: %+v", err)
 			return err
 		}
 
 		err = clusterClient.ModifyClusterStatus(ctx, p.Job.ClusterId, constants.StatusActive)
 	case constants.ActionRollbackCluster:
-		providerInterface, err := plugins.GetProviderPlugin(ctx, p.Job.Provider)
+		err = p.UpdateClusterDetails(ctx)
 		if err != nil {
-			logger.Error(ctx, "No such provider [%s]. ", p.Job.Provider)
-			return err
-		}
-		err = providerInterface.UpdateClusterStatus(ctx, p.Job)
-		if err != nil {
-			logger.Error(ctx, "Executing job post processor failed: %+v", err)
+			logger.Error(ctx, "Update cluster details failed: %+v", err)
 			return err
 		}
 
@@ -158,8 +145,12 @@ func (p *Processor) Post(ctx context.Context) error {
 		clusterWrapper := clusterWrappers[0]
 		if clusterWrapper.Cluster.ClusterType == constants.NormalClusterType {
 			frontgateId := clusterWrapper.Cluster.FrontgateId
-			pbClusters, err := clusterClient.DescribeClustersWithFrontgateId(ctx, frontgateId,
-				[]string{constants.StatusActive, constants.StatusPending})
+			pbClusters, err := clusterClient.DescribeClustersWithFrontgateId(
+				ctx,
+				frontgateId,
+				[]string{constants.StatusActive, constants.StatusPending},
+				clusterWrapper.Cluster.Debug,
+			)
 			if err != nil {
 				return err
 			}
@@ -180,7 +171,7 @@ func (p *Processor) Post(ctx context.Context) error {
 					constants.ActionStopClusters,
 					directive,
 					p.Job.Provider,
-					p.Job.Owner,
+					p.Job.OwnerPath,
 					frontgate.Cluster.RuntimeId,
 				)
 
@@ -225,8 +216,12 @@ func (p *Processor) Post(ctx context.Context) error {
 
 		if clusterWrapper.Cluster.ClusterType == constants.NormalClusterType && pi.Global().GlobalConfig().Cluster.FrontgateAutoDelete {
 			frontgateId := clusterWrapper.Cluster.FrontgateId
-			pbClusters, err := clusterClient.DescribeClustersWithFrontgateId(ctx, frontgateId,
-				[]string{constants.StatusStopped, constants.StatusActive, constants.StatusPending})
+			pbClusters, err := clusterClient.DescribeClustersWithFrontgateId(
+				ctx,
+				frontgateId,
+				[]string{constants.StatusStopped, constants.StatusActive, constants.StatusPending},
+				clusterWrapper.Cluster.Debug,
+			)
 			if err != nil {
 				return err
 			}
@@ -247,7 +242,7 @@ func (p *Processor) Post(ctx context.Context) error {
 					constants.ActionDeleteClusters,
 					directive,
 					p.Job.Provider,
-					p.Job.Owner,
+					p.Job.OwnerPath,
 					frontgate.Cluster.RuntimeId,
 				)
 
@@ -262,14 +257,9 @@ func (p *Processor) Post(ctx context.Context) error {
 	case constants.ActionCeaseClusters:
 		err = clusterClient.ModifyClusterStatus(ctx, p.Job.ClusterId, constants.StatusCeased)
 	case constants.ActionUpdateClusterEnv:
-		providerInterface, err := plugins.GetProviderPlugin(ctx, p.Job.Provider)
+		err = p.UpdateClusterDetails(ctx)
 		if err != nil {
-			logger.Error(ctx, "No such provider [%s]. ", p.Job.Provider)
-			return err
-		}
-		err = providerInterface.UpdateClusterStatus(ctx, p.Job)
-		if err != nil {
-			logger.Error(ctx, "Executing job post processor failed: %+v", err)
+			logger.Error(ctx, "Update cluster details failed: %+v", err)
 			return err
 		}
 
@@ -320,4 +310,58 @@ func (p *Processor) Final(ctx context.Context) {
 	if err != nil {
 		logger.Error(ctx, "Executing job final processor failed: %+v", err)
 	}
+}
+
+func (p *Processor) UpdateClusterDetails(ctx context.Context) error {
+	clusterWrapper, err := models.NewClusterWrapper(ctx, p.Job.Directive)
+	if err != nil {
+		return err
+	}
+
+	providerClient, err := providerclient.NewRuntimeProviderManagerClient()
+	if err != nil {
+		return gerr.NewWithDetail(ctx, gerr.Internal, err, gerr.ErrorInternalError)
+	}
+
+	response, err := providerClient.DescribeClusterDetails(ctx, &pb.DescribeClusterDetailsRequest{
+		RuntimeId: pbutil.ToProtoString(clusterWrapper.Cluster.RuntimeId),
+		Cluster:   models.ClusterWrapperToPb(clusterWrapper),
+	})
+	if err != nil {
+		logger.Error(ctx, "Describe cluster details failed, %+v", err)
+		return err
+	}
+	clusterWrapper = models.PbToClusterWrapper(response.Cluster)
+
+	if clusterWrapper != nil && len(clusterWrapper.Cluster.ClusterId) > 0 {
+		var clusterRoles []*models.ClusterRole
+		for _, clusterRole := range clusterWrapper.ClusterRoles {
+			clusterRoles = append(clusterRoles, clusterRole)
+		}
+
+		var clusterNodes []*models.ClusterNodeWithKeyPairs
+		for _, clusterNode := range clusterWrapper.ClusterNodesWithKeyPairs {
+			clusterNodes = append(clusterNodes, clusterNode)
+		}
+
+		clusterClient, err := clusterclient.NewClient()
+		if err != nil {
+			return err
+		}
+
+		modifyClusterRequest := &pb.ModifyClusterRequest{
+			Cluster: &pb.Cluster{
+				ClusterId:   pbutil.ToProtoString(clusterWrapper.Cluster.ClusterId),
+				Description: pbutil.ToProtoString(clusterWrapper.Cluster.Description),
+			},
+			ClusterRoleSet: models.ClusterRolesToPbs(clusterRoles),
+			ClusterNodeSet: models.ClusterNodesWithKeyPairsToPbs(clusterNodes),
+		}
+		_, err = clusterClient.ModifyCluster(ctx, modifyClusterRequest)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

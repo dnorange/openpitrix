@@ -18,6 +18,7 @@ import (
 	"openpitrix.io/openpitrix/pkg/pi"
 	"openpitrix.io/openpitrix/pkg/repoiface"
 	"openpitrix.io/openpitrix/pkg/repoiface/wrapper"
+	"openpitrix.io/openpitrix/pkg/sender"
 	"openpitrix.io/openpitrix/pkg/service/category/categoryutil"
 	"openpitrix.io/openpitrix/pkg/util/stringutil"
 )
@@ -136,6 +137,7 @@ func (rp *repoProxy) syncAppInfo(ctx context.Context, appIface wrapper.VersionIn
 		}
 		app = models.NewApp(
 			chartName,
+			sender.OwnerPath(rp.repo.GetOwnerPath().GetValue()),
 			rp.repo.GetOwner().GetValue(),
 		)
 		app.RepoId = repoId
@@ -272,11 +274,12 @@ func (rp *repoProxy) syncAppVersionInfo(ctx context.Context, appId string, versi
 			appId,
 			versionName,
 			versionInterface.GetDescription(),
-			rp.repo.GetOwner().GetValue(),
+			sender.OwnerPath(rp.repo.GetOwnerPath().GetValue()),
 		)
 
 		appVersion.PackageName = versionInterface.GetPackageName()
 		appVersion.Status = status
+		appVersion.Type = rp.repo.Type.GetValue()
 
 		_, err = pi.Global().DB(ctx).
 			InsertInto(constants.TableAppVersion).

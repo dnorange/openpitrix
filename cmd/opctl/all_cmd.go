@@ -11,22 +11,35 @@ import (
 
 	"github.com/go-openapi/strfmt"
 
+	"openpitrix.io/openpitrix/test/client/access_manager"
 	"openpitrix.io/openpitrix/test/client/account_manager"
 	"openpitrix.io/openpitrix/test/client/app_manager"
 	"openpitrix.io/openpitrix/test/client/attachment_service"
 	"openpitrix.io/openpitrix/test/client/category_manager"
 	"openpitrix.io/openpitrix/test/client/cluster_manager"
+	"openpitrix.io/openpitrix/test/client/isv_manager"
 	"openpitrix.io/openpitrix/test/client/job_manager"
 	"openpitrix.io/openpitrix/test/client/market_manager"
 	"openpitrix.io/openpitrix/test/client/repo_indexer"
 	"openpitrix.io/openpitrix/test/client/repo_manager"
 	"openpitrix.io/openpitrix/test/client/runtime_manager"
+	"openpitrix.io/openpitrix/test/client/service_config"
 	"openpitrix.io/openpitrix/test/client/task_manager"
 	"openpitrix.io/openpitrix/test/client/token_manager"
 	"openpitrix.io/openpitrix/test/models"
 )
 
 var AllCmd = []Cmd{
+	NewBindUserRoleCmd(),
+	NewCanDoCmd(),
+	NewCreateRoleCmd(),
+	NewDeleteRolesCmd(),
+	NewDescribeRolesCmd(),
+	NewGetRoleCmd(),
+	NewGetRoleModuleCmd(),
+	NewModifyRoleCmd(),
+	NewModifyRoleModuleCmd(),
+	NewUnbindUserRoleCmd(),
 	NewChangePasswordCmd(),
 	NewCreateGroupCmd(),
 	NewCreatePasswordResetCmd(),
@@ -34,13 +47,19 @@ var AllCmd = []Cmd{
 	NewDeleteGroupsCmd(),
 	NewDeleteUsersCmd(),
 	NewDescribeGroupsCmd(),
+	NewDescribeGroupsDetailCmd(),
 	NewDescribeUsersCmd(),
+	NewDescribeUsersDetailCmd(),
 	NewGetPasswordResetCmd(),
+	NewIsvCreateUserCmd(),
 	NewJoinGroupCmd(),
 	NewLeaveGroupCmd(),
 	NewModifyGroupCmd(),
 	NewModifyUserCmd(),
 	NewValidateUserPasswordCmd(),
+	NewBusinessPassAppVersionCmd(),
+	NewBusinessRejectAppVersionCmd(),
+	NewBusinessReviewAppVersionCmd(),
 	NewCancelAppVersionCmd(),
 	NewCreateAppCmd(),
 	NewCreateAppVersionCmd(),
@@ -49,19 +68,24 @@ var AllCmd = []Cmd{
 	NewDescribeActiveAppVersionsCmd(),
 	NewDescribeActiveAppsCmd(),
 	NewDescribeAppVersionAuditsCmd(),
+	NewDescribeAppVersionReviewsCmd(),
 	NewDescribeAppVersionsCmd(),
 	NewDescribeAppsCmd(),
 	NewGetAppStatisticsCmd(),
 	NewGetAppVersionPackageCmd(),
 	NewGetAppVersionPackageFilesCmd(),
+	NewIsvPassAppVersionCmd(),
+	NewIsvRejectAppVersionCmd(),
+	NewIsvReviewAppVersionCmd(),
 	NewModifyAppCmd(),
 	NewModifyAppVersionCmd(),
-	NewPassAppVersionCmd(),
 	NewRecoverAppVersionCmd(),
-	NewRejectAppVersionCmd(),
 	NewReleaseAppVersionCmd(),
 	NewSubmitAppVersionCmd(),
 	NewSuspendAppVersionCmd(),
+	NewTechnicalPassAppVersionCmd(),
+	NewTechnicalRejectAppVersionCmd(),
+	NewTechnicalReviewAppVersionCmd(),
 	NewUploadAppAttachmentCmd(),
 	NewValidatePackageCmd(),
 	NewGetAttachmentCmd(),
@@ -73,12 +97,16 @@ var AllCmd = []Cmd{
 	NewAttachKeyPairsCmd(),
 	NewCeaseClustersCmd(),
 	NewCreateClusterCmd(),
+	NewCreateDebugClusterCmd(),
 	NewCreateKeyPairCmd(),
 	NewDeleteClusterNodesCmd(),
 	NewDeleteClustersCmd(),
 	NewDeleteKeyPairsCmd(),
+	NewDescribeAppClustersCmd(),
 	NewDescribeClusterNodesCmd(),
 	NewDescribeClustersCmd(),
+	NewDescribeDebugAppClustersCmd(),
+	NewDescribeDebugClustersCmd(),
 	NewDescribeKeyPairsCmd(),
 	NewDescribeSubnetsCmd(),
 	NewDetachKeyPairsCmd(),
@@ -92,6 +120,12 @@ var AllCmd = []Cmd{
 	NewStopClustersCmd(),
 	NewUpdateClusterEnvCmd(),
 	NewUpgradeClusterCmd(),
+	NewDescribeAppVendorStatisticsCmd(),
+	NewDescribeVendorVerifyInfosCmd(),
+	NewGetVendorVerifyInfoCmd(),
+	NewPassVendorVerifyInfoCmd(),
+	NewRejectVendorVerifyInfoCmd(),
+	NewSubmitVendorVerifyInfoCmd(),
 	NewDescribeJobsCmd(),
 	NewCreateMarketCmd(),
 	NewDeleteMarketsCmd(),
@@ -107,16 +141,400 @@ var AllCmd = []Cmd{
 	NewDescribeReposCmd(),
 	NewModifyRepoCmd(),
 	NewValidateRepoCmd(),
+	NewCreateDebugRuntimeCmd(),
+	NewCreateDebugRuntimeCredentialCmd(),
 	NewCreateRuntimeCmd(),
+	NewCreateRuntimeCredentialCmd(),
+	NewDeleteRuntimeCredentialsCmd(),
 	NewDeleteRuntimesCmd(),
+	NewDescribeDebugRuntimeCredentialsCmd(),
+	NewDescribeDebugRuntimesCmd(),
+	NewDescribeRuntimeCredentialsCmd(),
 	NewDescribeRuntimeProviderZonesCmd(),
 	NewDescribeRuntimesCmd(),
 	NewGetRuntimeStatisticsCmd(),
 	NewModifyRuntimeCmd(),
+	NewModifyRuntimeCredentialCmd(),
+	NewValidateRuntimeCredentialCmd(),
+	NewGetServiceConfigCmd(),
+	NewSetServiceConfigCmd(),
+	NewValidateEmailServiceCmd(),
 	NewDescribeTasksCmd(),
 	NewRetryTasksCmd(),
 	NewCreateClientCmd(),
 	NewTokenCmd(),
+}
+
+type BindUserRoleCmd struct {
+	*models.OpenpitrixBindUserRoleRequest
+}
+
+func NewBindUserRoleCmd() Cmd {
+	cmd := &BindUserRoleCmd{}
+	cmd.OpenpitrixBindUserRoleRequest = &models.OpenpitrixBindUserRoleRequest{}
+	return cmd
+}
+
+func (*BindUserRoleCmd) GetActionName() string {
+	return "BindUserRole"
+}
+
+func (c *BindUserRoleCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.RoleID, "role_id", "", []string{}, "required, ids of role for user to bind with")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "required, ids of user to bind")
+}
+
+func (c *BindUserRoleCmd) Run(out Out) error {
+	params := access_manager.NewBindUserRoleParams()
+	params.WithBody(c.OpenpitrixBindUserRoleRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.BindUserRole(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type CanDoCmd struct {
+	*models.OpenpitrixCanDoRequest
+}
+
+func NewCanDoCmd() Cmd {
+	cmd := &CanDoCmd{}
+	cmd.OpenpitrixCanDoRequest = &models.OpenpitrixCanDoRequest{}
+	return cmd
+}
+
+func (*CanDoCmd) GetActionName() string {
+	return "CanDo"
+}
+
+func (c *CanDoCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.APIMethod, "api_method", "", "", "rpc method eg.[Token|CanDo|...]")
+	f.StringVarP(&c.URL, "url", "", "", "required, request uri")
+	f.StringVarP(&c.URLMethod, "url_method", "", "", "required, url method, http verb")
+	f.StringVarP(&c.UserID, "user_id", "", "", "required, id of user to check whether has permission")
+}
+
+func (c *CanDoCmd) Run(out Out) error {
+	params := access_manager.NewCanDoParams()
+	params.WithBody(c.OpenpitrixCanDoRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.CanDo(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type CreateRoleCmd struct {
+	*models.OpenpitrixCreateRoleRequest
+}
+
+func NewCreateRoleCmd() Cmd {
+	cmd := &CreateRoleCmd{}
+	cmd.OpenpitrixCreateRoleRequest = &models.OpenpitrixCreateRoleRequest{}
+	return cmd
+}
+
+func (*CreateRoleCmd) GetActionName() string {
+	return "CreateRole"
+}
+
+func (c *CreateRoleCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Description, "description", "", "", "role description")
+	f.StringVarP(&c.Portal, "portal", "", "", "required, portal of role eg.[global_admin|user|isv]")
+	f.StringVarP(&c.RoleName, "role_name", "", "", "required, role name")
+}
+
+func (c *CreateRoleCmd) Run(out Out) error {
+	params := access_manager.NewCreateRoleParams()
+	params.WithBody(c.OpenpitrixCreateRoleRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.CreateRole(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DeleteRolesCmd struct {
+	*models.OpenpitrixDeleteRolesRequest
+}
+
+func NewDeleteRolesCmd() Cmd {
+	cmd := &DeleteRolesCmd{}
+	cmd.OpenpitrixDeleteRolesRequest = &models.OpenpitrixDeleteRolesRequest{}
+	return cmd
+}
+
+func (*DeleteRolesCmd) GetActionName() string {
+	return "DeleteRoles"
+}
+
+func (c *DeleteRolesCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.RoleID, "role_id", "", []string{}, "required, ids of role to delete")
+}
+
+func (c *DeleteRolesCmd) Run(out Out) error {
+	params := access_manager.NewDeleteRolesParams()
+	params.WithBody(c.OpenpitrixDeleteRolesRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.DeleteRoles(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeRolesCmd struct {
+	*access_manager.DescribeRolesParams
+}
+
+func NewDescribeRolesCmd() Cmd {
+	return &DescribeRolesCmd{
+		access_manager.NewDescribeRolesParams(),
+	}
+}
+
+func (*DescribeRolesCmd) GetActionName() string {
+	return "DescribeRoles"
+}
+
+func (c *DescribeRolesCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.ActionBundleID, "action_bundle_id", "", []string{}, "action bundle ids.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Portal, "portal", "", []string{}, "portal eg.[global_admin|user|isv].")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RoleID, "role_id", "", []string{}, "role ids.")
+	f.StringSliceVarP(&c.RoleName, "role_name", "", []string{}, "name.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(role_id, portal, status).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+}
+
+func (c *DescribeRolesCmd) Run(out Out) error {
+	params := c.DescribeRolesParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.DescribeRoles(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type GetRoleCmd struct {
+	*access_manager.GetRoleParams
+}
+
+func NewGetRoleCmd() Cmd {
+	return &GetRoleCmd{
+		access_manager.NewGetRoleParams(),
+	}
+}
+
+func (*GetRoleCmd) GetActionName() string {
+	return "GetRole"
+}
+
+func (c *GetRoleCmd) ParseFlag(f Flag) {
+	c.RoleID = new(string)
+	f.StringVarP(c.RoleID, "role_id", "", "", "required, use role id to get role info.")
+}
+
+func (c *GetRoleCmd) Run(out Out) error {
+	params := c.GetRoleParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.GetRole(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type GetRoleModuleCmd struct {
+	*access_manager.GetRoleModuleParams
+}
+
+func NewGetRoleModuleCmd() Cmd {
+	return &GetRoleModuleCmd{
+		access_manager.NewGetRoleModuleParams(),
+	}
+}
+
+func (*GetRoleModuleCmd) GetActionName() string {
+	return "GetRoleModule"
+}
+
+func (c *GetRoleModuleCmd) ParseFlag(f Flag) {
+	c.RoleID = new(string)
+	f.StringVarP(c.RoleID, "role_id", "", "", "required, use role id to get role&#39;s module.")
+}
+
+func (c *GetRoleModuleCmd) Run(out Out) error {
+	params := c.GetRoleModuleParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.GetRoleModule(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type ModifyRoleCmd struct {
+	*models.OpenpitrixModifyRoleRequest
+}
+
+func NewModifyRoleCmd() Cmd {
+	cmd := &ModifyRoleCmd{}
+	cmd.OpenpitrixModifyRoleRequest = &models.OpenpitrixModifyRoleRequest{}
+	return cmd
+}
+
+func (*ModifyRoleCmd) GetActionName() string {
+	return "ModifyRole"
+}
+
+func (c *ModifyRoleCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Description, "description", "", "", "role description")
+	f.StringVarP(&c.RoleID, "role_id", "", "", "required, id of role to modify")
+	f.StringVarP(&c.RoleName, "role_name", "", "", "role name")
+}
+
+func (c *ModifyRoleCmd) Run(out Out) error {
+	params := access_manager.NewModifyRoleParams()
+	params.WithBody(c.OpenpitrixModifyRoleRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.ModifyRole(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type ModifyRoleModuleCmd struct {
+	*models.OpenpitrixModifyRoleModuleRequest
+}
+
+func NewModifyRoleModuleCmd() Cmd {
+	cmd := &ModifyRoleModuleCmd{}
+	cmd.OpenpitrixModifyRoleModuleRequest = &models.OpenpitrixModifyRoleModuleRequest{}
+	return cmd
+}
+
+func (*ModifyRoleModuleCmd) GetActionName() string {
+	return "ModifyRoleModule"
+}
+
+func (c *ModifyRoleModuleCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.RoleID, "role_id", "", "", "required, use role id to modify role module")
+}
+
+func (c *ModifyRoleModuleCmd) Run(out Out) error {
+	params := access_manager.NewModifyRoleModuleParams()
+	params.WithBody(c.OpenpitrixModifyRoleModuleRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.ModifyRoleModule(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type UnbindUserRoleCmd struct {
+	*models.OpenpitrixUnbindUserRoleRequest
+}
+
+func NewUnbindUserRoleCmd() Cmd {
+	cmd := &UnbindUserRoleCmd{}
+	cmd.OpenpitrixUnbindUserRoleRequest = &models.OpenpitrixUnbindUserRoleRequest{}
+	return cmd
+}
+
+func (*UnbindUserRoleCmd) GetActionName() string {
+	return "UnbindUserRole"
+}
+
+func (c *UnbindUserRoleCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.RoleID, "role_id", "", []string{}, "ids of role for user to unbind with")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "ids of user to unbind")
+}
+
+func (c *UnbindUserRoleCmd) Run(out Out) error {
+	params := access_manager.NewUnbindUserRoleParams()
+	params.WithBody(c.OpenpitrixUnbindUserRoleRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccessManager.UnbindUserRole(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
 }
 
 type ChangePasswordCmd struct {
@@ -134,8 +552,8 @@ func (*ChangePasswordCmd) GetActionName() string {
 }
 
 func (c *ChangePasswordCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.NewPassword, "new_password", "", "", "")
-	f.StringVarP(&c.ResetID, "reset_id", "", "", "")
+	f.StringVarP(&c.NewPassword, "new_password", "", "", "required, new password for reset")
+	f.StringVarP(&c.ResetID, "reset_id", "", "", "required, reset id")
 }
 
 func (c *ChangePasswordCmd) Run(out Out) error {
@@ -170,8 +588,9 @@ func (*CreateGroupCmd) GetActionName() string {
 }
 
 func (c *CreateGroupCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "group description")
+	f.StringVarP(&c.Name, "name", "", "", "required, group name")
+	f.StringVarP(&c.ParentGroupID, "parent_group_id", "", "", "required, parent group id")
 }
 
 func (c *CreateGroupCmd) Run(out Out) error {
@@ -206,8 +625,8 @@ func (*CreatePasswordResetCmd) GetActionName() string {
 }
 
 func (c *CreatePasswordResetCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Password, "password", "", "", "")
-	f.StringVarP(&c.UserID, "user_id", "", "", "")
+	f.StringVarP(&c.Password, "password", "", "", "required, user password")
+	f.StringVarP(&c.UserID, "user_id", "", "", "required, id of user to create reset password action")
 }
 
 func (c *CreatePasswordResetCmd) Run(out Out) error {
@@ -242,10 +661,11 @@ func (*CreateUserCmd) GetActionName() string {
 }
 
 func (c *CreateUserCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Email, "email", "", "", "")
-	f.StringVarP(&c.Password, "password", "", "", "")
-	f.StringVarP(&c.Role, "role", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "user description")
+	f.StringVarP(&c.Email, "email", "", "", "required, user email")
+	f.StringVarP(&c.Password, "password", "", "", "required, user password")
+	f.StringVarP(&c.PhoneNumber, "phone_number", "", "", "user phone number")
+	f.StringVarP(&c.RoleID, "role_id", "", "", "required, user role_id")
 }
 
 func (c *CreateUserCmd) Run(out Out) error {
@@ -280,7 +700,7 @@ func (*DeleteGroupsCmd) GetActionName() string {
 }
 
 func (c *DeleteGroupsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "")
+	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "required, ids of group to delete")
 }
 
 func (c *DeleteGroupsCmd) Run(out Out) error {
@@ -315,7 +735,7 @@ func (*DeleteUsersCmd) GetActionName() string {
 }
 
 func (c *DeleteUsersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "required, ids of user to delete")
 }
 
 func (c *DeleteUsersCmd) Run(out Out) error {
@@ -350,27 +770,80 @@ func (*DescribeGroupsCmd) GetActionName() string {
 }
 
 func (c *DescribeGroupsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "")
+	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "group ids.")
+	f.StringSliceVarP(&c.GroupName, "group_name", "", []string{}, "group name.")
+	f.StringSliceVarP(&c.GroupPath, "group_path", "", []string{}, "group path, a concat string gid-xxx.gid-xxx.gid...")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.ParentGroupID, "parent_group_id", "", []string{}, "parent group ids.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RootGroupID, "root_group_id", "", []string{}, "use root group ids to get all groups.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(group_id, parent_group_id, group_path, status).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
-	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
 }
 
 func (c *DescribeGroupsCmd) Run(out Out) error {
+	params := c.DescribeGroupsParams
 
-	out.WriteRequest(c.DescribeGroupsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AccountManager.DescribeGroups(c.DescribeGroupsParams, nil)
+	res, err := client.AccountManager.DescribeGroups(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeGroupsDetailCmd struct {
+	*account_manager.DescribeGroupsDetailParams
+}
+
+func NewDescribeGroupsDetailCmd() Cmd {
+	return &DescribeGroupsDetailCmd{
+		account_manager.NewDescribeGroupsDetailParams(),
+	}
+}
+
+func (*DescribeGroupsDetailCmd) GetActionName() string {
+	return "DescribeGroupsDetail"
+}
+
+func (c *DescribeGroupsDetailCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "group ids.")
+	f.StringSliceVarP(&c.GroupName, "group_name", "", []string{}, "group name.")
+	f.StringSliceVarP(&c.GroupPath, "group_path", "", []string{}, "group path, a concat string gid-xxx.gid-xxx.gid...")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.ParentGroupID, "parent_group_id", "", []string{}, "parent group ids.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RootGroupID, "root_group_id", "", []string{}, "use root group ids to get all groups.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(group_id, parent_group_id, group_path, status).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+}
+
+func (c *DescribeGroupsDetailCmd) Run(out Out) error {
+	params := c.DescribeGroupsDetailParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccountManager.DescribeGroupsDetail(params, nil)
 	if err != nil {
 		return err
 	}
@@ -395,28 +868,84 @@ func (*DescribeUsersCmd) GetActionName() string {
 }
 
 func (c *DescribeUsersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "")
+	f.StringSliceVarP(&c.Email, "email", "", []string{}, "email, eg.op@yunify.com.")
+	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "group ids.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit, default 20, max 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.PhoneNumber, "phone_number", "", []string{}, "phone number, string of 11 digital.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
-	f.StringSliceVarP(&c.Role, "role", "", []string{}, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RoleID, "role_id", "", []string{}, "role ids.")
+	f.StringSliceVarP(&c.RootGroupID, "root_group_id", "", []string{}, "use root group ids to get all group ids.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(user_id, email, phone_number, status).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
-	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "user ids.")
+	f.StringSliceVarP(&c.Username, "username", "", []string{}, "username.")
 }
 
 func (c *DescribeUsersCmd) Run(out Out) error {
+	params := c.DescribeUsersParams
 
-	out.WriteRequest(c.DescribeUsersParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AccountManager.DescribeUsers(c.DescribeUsersParams, nil)
+	res, err := client.AccountManager.DescribeUsers(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeUsersDetailCmd struct {
+	*account_manager.DescribeUsersDetailParams
+}
+
+func NewDescribeUsersDetailCmd() Cmd {
+	return &DescribeUsersDetailCmd{
+		account_manager.NewDescribeUsersDetailParams(),
+	}
+}
+
+func (*DescribeUsersDetailCmd) GetActionName() string {
+	return "DescribeUsersDetail"
+}
+
+func (c *DescribeUsersDetailCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.Email, "email", "", []string{}, "email, eg.op@yunify.com.")
+	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "group ids.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit, default 20, max 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.PhoneNumber, "phone_number", "", []string{}, "phone number, string of 11 digital.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RoleID, "role_id", "", []string{}, "role ids.")
+	f.StringSliceVarP(&c.RootGroupID, "root_group_id", "", []string{}, "use root group ids to get all group ids.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(user_id, email, phone_number, status).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "user ids.")
+	f.StringSliceVarP(&c.Username, "username", "", []string{}, "username.")
+}
+
+func (c *DescribeUsersDetailCmd) Run(out Out) error {
+	params := c.DescribeUsersDetailParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccountManager.DescribeUsersDetail(params, nil)
 	if err != nil {
 		return err
 	}
@@ -441,14 +970,56 @@ func (*GetPasswordResetCmd) GetActionName() string {
 }
 
 func (c *GetPasswordResetCmd) ParseFlag(f Flag) {
+	c.ResetID = new(string)
+	f.StringVarP(c.ResetID, "reset_id", "", "", "required, reset id.")
 }
 
 func (c *GetPasswordResetCmd) Run(out Out) error {
+	params := c.GetPasswordResetParams
 
-	out.WriteRequest(c.GetPasswordResetParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AccountManager.GetPasswordReset(c.GetPasswordResetParams, nil)
+	res, err := client.AccountManager.GetPasswordReset(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type IsvCreateUserCmd struct {
+	*models.OpenpitrixCreateUserRequest
+}
+
+func NewIsvCreateUserCmd() Cmd {
+	cmd := &IsvCreateUserCmd{}
+	cmd.OpenpitrixCreateUserRequest = &models.OpenpitrixCreateUserRequest{}
+	return cmd
+}
+
+func (*IsvCreateUserCmd) GetActionName() string {
+	return "IsvCreateUser"
+}
+
+func (c *IsvCreateUserCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Description, "description", "", "", "user description")
+	f.StringVarP(&c.Email, "email", "", "", "required, user email")
+	f.StringVarP(&c.Password, "password", "", "", "required, user password")
+	f.StringVarP(&c.PhoneNumber, "phone_number", "", "", "user phone number")
+	f.StringVarP(&c.RoleID, "role_id", "", "", "required, user role_id")
+}
+
+func (c *IsvCreateUserCmd) Run(out Out) error {
+	params := account_manager.NewIsvCreateUserParams()
+	params.WithBody(c.OpenpitrixCreateUserRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AccountManager.IsvCreateUser(params, nil)
 	if err != nil {
 		return err
 	}
@@ -473,8 +1044,8 @@ func (*JoinGroupCmd) GetActionName() string {
 }
 
 func (c *JoinGroupCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "")
-	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "")
+	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "required, ids of group for user to join in")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "required, ids of user to join")
 }
 
 func (c *JoinGroupCmd) Run(out Out) error {
@@ -509,8 +1080,8 @@ func (*LeaveGroupCmd) GetActionName() string {
 }
 
 func (c *LeaveGroupCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "")
-	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "")
+	f.StringSliceVarP(&c.GroupID, "group_id", "", []string{}, "required, ids of group for user to leave from")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "required, ids of user to leave")
 }
 
 func (c *LeaveGroupCmd) Run(out Out) error {
@@ -545,9 +1116,10 @@ func (*ModifyGroupCmd) GetActionName() string {
 }
 
 func (c *ModifyGroupCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.GroupID, "group_id", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "group description")
+	f.StringVarP(&c.GroupID, "group_id", "", "", "required, id of group to modify")
+	f.StringVarP(&c.Name, "name", "", "", "group name")
+	f.StringVarP(&c.ParentGroupID, "parent_group_id", "", "", "parent group id")
 }
 
 func (c *ModifyGroupCmd) Run(out Out) error {
@@ -582,12 +1154,12 @@ func (*ModifyUserCmd) GetActionName() string {
 }
 
 func (c *ModifyUserCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Email, "email", "", "", "")
-	f.StringVarP(&c.Password, "password", "", "", "")
-	f.StringVarP(&c.Role, "role", "", "", "")
-	f.StringVarP(&c.UserID, "user_id", "", "", "")
-	f.StringVarP(&c.Username, "username", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "user description")
+	f.StringVarP(&c.Email, "email", "", "", "user email, eg.op@yunify.com")
+	f.StringVarP(&c.Password, "password", "", "", "user password")
+	f.StringVarP(&c.PhoneNumber, "phone_number", "", "", "user phone number, string of 11 digital")
+	f.StringVarP(&c.UserID, "user_id", "", "", "required, id of user to be modify")
+	f.StringVarP(&c.Username, "username", "", "", "user name")
 }
 
 func (c *ModifyUserCmd) Run(out Out) error {
@@ -622,8 +1194,8 @@ func (*ValidateUserPasswordCmd) GetActionName() string {
 }
 
 func (c *ValidateUserPasswordCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Email, "email", "", "", "")
-	f.StringVarP(&c.Password, "password", "", "", "")
+	f.StringVarP(&c.Email, "email", "", "", "required, user email")
+	f.StringVarP(&c.Password, "password", "", "", "required, user password")
 }
 
 func (c *ValidateUserPasswordCmd) Run(out Out) error {
@@ -634,6 +1206,112 @@ func (c *ValidateUserPasswordCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.AccountManager.ValidateUserPassword(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type BusinessPassAppVersionCmd struct {
+	*models.OpenpitrixPassAppVersionRequest
+}
+
+func NewBusinessPassAppVersionCmd() Cmd {
+	cmd := &BusinessPassAppVersionCmd{}
+	cmd.OpenpitrixPassAppVersionRequest = &models.OpenpitrixPassAppVersionRequest{}
+	return cmd
+}
+
+func (*BusinessPassAppVersionCmd) GetActionName() string {
+	return "BusinessPassAppVersion"
+}
+
+func (c *BusinessPassAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to pass")
+}
+
+func (c *BusinessPassAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewBusinessPassAppVersionParams()
+	params.WithBody(c.OpenpitrixPassAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.BusinessPassAppVersion(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type BusinessRejectAppVersionCmd struct {
+	*models.OpenpitrixRejectAppVersionRequest
+}
+
+func NewBusinessRejectAppVersionCmd() Cmd {
+	cmd := &BusinessRejectAppVersionCmd{}
+	cmd.OpenpitrixRejectAppVersionRequest = &models.OpenpitrixRejectAppVersionRequest{}
+	return cmd
+}
+
+func (*BusinessRejectAppVersionCmd) GetActionName() string {
+	return "BusinessRejectAppVersion"
+}
+
+func (c *BusinessRejectAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Message, "message", "", "", "reject message")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to reject")
+}
+
+func (c *BusinessRejectAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewBusinessRejectAppVersionParams()
+	params.WithBody(c.OpenpitrixRejectAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.BusinessRejectAppVersion(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type BusinessReviewAppVersionCmd struct {
+	*models.OpenpitrixReviewAppVersionRequest
+}
+
+func NewBusinessReviewAppVersionCmd() Cmd {
+	cmd := &BusinessReviewAppVersionCmd{}
+	cmd.OpenpitrixReviewAppVersionRequest = &models.OpenpitrixReviewAppVersionRequest{}
+	return cmd
+}
+
+func (*BusinessReviewAppVersionCmd) GetActionName() string {
+	return "BusinessReviewAppVersion"
+}
+
+func (c *BusinessReviewAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to review")
+}
+
+func (c *BusinessReviewAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewBusinessReviewAppVersionParams()
+	params.WithBody(c.OpenpitrixReviewAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.BusinessReviewAppVersion(params, nil)
 	if err != nil {
 		return err
 	}
@@ -658,7 +1336,7 @@ func (*CancelAppVersionCmd) GetActionName() string {
 }
 
 func (c *CancelAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to cancel")
 }
 
 func (c *CancelAppVersionCmd) Run(out Out) error {
@@ -695,11 +1373,11 @@ func (*CreateAppCmd) GetActionName() string {
 }
 
 func (c *CreateAppCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.IconPath, "icon", "", "", "filepath of icon. ")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.VersionName, "version_name", "", "", "")
-	f.StringVarP(&c.VersionPackagePath, "version_package", "", "", "filepath of version__package. ")
-	f.StringVarP(&c.VersionType, "version_type", "", "", "")
+	f.StringVarP(&c.IconPath, "icon", "", "", "filepath of icon. app icon")
+	f.StringVarP(&c.Name, "name", "", "", "required, app name")
+	f.StringVarP(&c.VersionName, "version_name", "", "", "required, version name of the app")
+	f.StringVarP(&c.VersionPackagePath, "version_package", "", "", "filepath of version_package. required, version with specific app package")
+	f.StringVarP(&c.VersionType, "version_type", "", "", "optional, vmbased/helm")
 }
 
 func (c *CreateAppCmd) Run(out Out) error {
@@ -749,11 +1427,11 @@ func (*CreateAppVersionCmd) GetActionName() string {
 }
 
 func (c *CreateAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.AppID, "app_id", "", "", "")
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.PackagePath, "package", "", "", "filepath of package. ")
-	f.StringVarP(&c.Type, "type", "", "", "")
+	f.StringVarP(&c.AppID, "app_id", "", "", "required, id of app to create new version")
+	f.StringVarP(&c.Description, "description", "", "", "description of app of specific version")
+	f.StringVarP(&c.Name, "name", "", "", "required, version name eg.[0.1.0|0.1.3|...]")
+	f.StringVarP(&c.PackagePath, "package", "", "", "filepath of package. package of app of specific version")
+	f.StringVarP(&c.Type, "type", "", "", "optional: vmbased/helm")
 }
 
 func (c *CreateAppVersionCmd) Run(out Out) error {
@@ -795,7 +1473,7 @@ func (*DeleteAppVersionCmd) GetActionName() string {
 }
 
 func (c *DeleteAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to delete")
 }
 
 func (c *DeleteAppVersionCmd) Run(out Out) error {
@@ -830,7 +1508,7 @@ func (*DeleteAppsCmd) GetActionName() string {
 }
 
 func (c *DeleteAppsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "required, ids of app to delete")
 }
 
 func (c *DeleteAppsCmd) Run(out Out) error {
@@ -865,32 +1543,34 @@ func (*DescribeActiveAppVersionsCmd) GetActionName() string {
 }
 
 func (c *DescribeActiveAppVersionsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "")
-	f.StringSliceVarP(&c.Description, "description", "", []string{}, "")
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.Description, "description", "", []string{}, "description.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
-	f.StringSliceVarP(&c.Name, "name", "", []string{}, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	f.StringSliceVarP(&c.Name, "name", "", []string{}, "app version name.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
-	f.StringSliceVarP(&c.PackageName, "package_name", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.PackageName, "package_name", "", []string{}, "app version package name.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(version_id, app_id, name, owner, description, package_name, status, type).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
-	f.StringSliceVarP(&c.Type, "type", "", []string{}, "")
-	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "app version status eg.[draft|submitted|passed|rejected|active|in-review|deleted|suspended].")
+	f.StringSliceVarP(&c.Type, "type", "", []string{}, "app version type.")
+	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "app version ids.")
 }
 
 func (c *DescribeActiveAppVersionsCmd) Run(out Out) error {
+	params := c.DescribeActiveAppVersionsParams
 
-	out.WriteRequest(c.DescribeActiveAppVersionsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.DescribeActiveAppVersions(c.DescribeActiveAppVersionsParams, nil)
+	res, err := client.AppManager.DescribeActiveAppVersions(params, nil)
 	if err != nil {
 		return err
 	}
@@ -915,31 +1595,33 @@ func (*DescribeActiveAppsCmd) GetActionName() string {
 }
 
 func (c *DescribeActiveAppsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "")
-	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "")
-	f.StringSliceVarP(&c.ChartName, "chart_name", "", []string{}, "")
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "app category ids.")
+	f.StringSliceVarP(&c.ChartName, "chart_name", "", []string{}, "app chart name.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
-	f.StringSliceVarP(&c.Name, "name", "", []string{}, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default is 20, max value is 200.")
+	f.StringSliceVarP(&c.Name, "name", "", []string{}, "app name.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
-	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default is 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "app owner.")
+	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "app repository ids.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(app_id, name, repo_id, description, status, home, icon, screenshots, maintainers, sources, readme, owner, chart_name).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "app status eg.[modify|submit|review|cancel|release|delete|pass|reject|suspend|recover].")
 }
 
 func (c *DescribeActiveAppsCmd) Run(out Out) error {
+	params := c.DescribeActiveAppsParams
 
-	out.WriteRequest(c.DescribeActiveAppsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.DescribeActiveApps(c.DescribeActiveAppsParams, nil)
+	res, err := client.AppManager.DescribeActiveApps(params, nil)
 	if err != nil {
 		return err
 	}
@@ -964,27 +1646,80 @@ func (*DescribeAppVersionAuditsCmd) GetActionName() string {
 }
 
 func (c *DescribeAppVersionAuditsCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default is 20, max value is 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Operator, "operator", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default is 0.")
+	f.StringSliceVarP(&c.Operator, "operator", "", []string{}, "auditer of app version.")
+	f.StringSliceVarP(&c.OperatorType, "operator_type", "", []string{}, "operator type eg.[global_admin|developer|business|technical|isv].")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
-	f.StringSliceVarP(&c.Role, "role", "", []string{}, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(version_id, app_id, status, operator, role).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "app version audit status eg.[draft|submitted|passed|rejected|active|in-review|deleted|suspended].")
+	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "app version ids.")
 }
 
 func (c *DescribeAppVersionAuditsCmd) Run(out Out) error {
+	params := c.DescribeAppVersionAuditsParams
 
-	out.WriteRequest(c.DescribeAppVersionAuditsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.DescribeAppVersionAudits(c.DescribeAppVersionAuditsParams, nil)
+	res, err := client.AppManager.DescribeAppVersionAudits(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeAppVersionReviewsCmd struct {
+	*app_manager.DescribeAppVersionReviewsParams
+}
+
+func NewDescribeAppVersionReviewsCmd() Cmd {
+	return &DescribeAppVersionReviewsCmd{
+		app_manager.NewDescribeAppVersionReviewsParams(),
+	}
+}
+
+func (*DescribeAppVersionReviewsCmd) GetActionName() string {
+	return "DescribeAppVersionReviews"
+}
+
+func (c *DescribeAppVersionReviewsCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default is 20, max value is 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default is 0.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.ReviewID, "review_id", "", []string{}, "app version review ids.")
+	f.StringSliceVarP(&c.Reviewer, "reviewer", "", []string{}, "reviewer of app version eg.[global_admin|developer|business|technical|isv].")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(review_id, version_id, app_id, status, reviewer).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "app version status eg.[isv-in-review|isv-passed|isv-rejected|isv-draft|business-in-review|business-passed|business-rejected|develop-draft|develop-in-review|develop-passed|develop-rejected|develop-draft].")
+	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "app version ids.")
+}
+
+func (c *DescribeAppVersionReviewsCmd) Run(out Out) error {
+	params := c.DescribeAppVersionReviewsParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.DescribeAppVersionReviews(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1009,32 +1744,34 @@ func (*DescribeAppVersionsCmd) GetActionName() string {
 }
 
 func (c *DescribeAppVersionsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "")
-	f.StringSliceVarP(&c.Description, "description", "", []string{}, "")
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.Description, "description", "", []string{}, "description.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
-	f.StringSliceVarP(&c.Name, "name", "", []string{}, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	f.StringSliceVarP(&c.Name, "name", "", []string{}, "app version name.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
-	f.StringSliceVarP(&c.PackageName, "package_name", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.PackageName, "package_name", "", []string{}, "app version package name.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(version_id, app_id, name, owner, description, package_name, status, type).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
-	f.StringSliceVarP(&c.Type, "type", "", []string{}, "")
-	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "app version status eg.[draft|submitted|passed|rejected|active|in-review|deleted|suspended].")
+	f.StringSliceVarP(&c.Type, "type", "", []string{}, "app version type.")
+	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "app version ids.")
 }
 
 func (c *DescribeAppVersionsCmd) Run(out Out) error {
+	params := c.DescribeAppVersionsParams
 
-	out.WriteRequest(c.DescribeAppVersionsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.DescribeAppVersions(c.DescribeAppVersionsParams, nil)
+	res, err := client.AppManager.DescribeAppVersions(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1059,31 +1796,33 @@ func (*DescribeAppsCmd) GetActionName() string {
 }
 
 func (c *DescribeAppsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "")
-	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "")
-	f.StringSliceVarP(&c.ChartName, "chart_name", "", []string{}, "")
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "app category ids.")
+	f.StringSliceVarP(&c.ChartName, "chart_name", "", []string{}, "app chart name.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
-	f.StringSliceVarP(&c.Name, "name", "", []string{}, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default is 20, max value is 200.")
+	f.StringSliceVarP(&c.Name, "name", "", []string{}, "app name.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
-	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default is 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "app owner.")
+	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "app repository ids.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(app_id, name, repo_id, description, status, home, icon, screenshots, maintainers, sources, readme, owner, chart_name).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "app status eg.[modify|submit|review|cancel|release|delete|pass|reject|suspend|recover].")
 }
 
 func (c *DescribeAppsCmd) Run(out Out) error {
+	params := c.DescribeAppsParams
 
-	out.WriteRequest(c.DescribeAppsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.DescribeApps(c.DescribeAppsParams, nil)
+	res, err := client.AppManager.DescribeApps(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1111,11 +1850,12 @@ func (c *GetAppStatisticsCmd) ParseFlag(f Flag) {
 }
 
 func (c *GetAppStatisticsCmd) Run(out Out) error {
+	params := c.GetAppStatisticsParams
 
-	out.WriteRequest(c.GetAppStatisticsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.GetAppStatistics(c.GetAppStatisticsParams, nil)
+	res, err := client.AppManager.GetAppStatistics(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1141,15 +1881,16 @@ func (*GetAppVersionPackageCmd) GetActionName() string {
 
 func (c *GetAppVersionPackageCmd) ParseFlag(f Flag) {
 	c.VersionID = new(string)
-	f.StringVarP(c.VersionID, "version_id", "", "", "")
+	f.StringVarP(c.VersionID, "version_id", "", "", "required, use version id to get package.")
 }
 
 func (c *GetAppVersionPackageCmd) Run(out Out) error {
+	params := c.GetAppVersionPackageParams
 
-	out.WriteRequest(c.GetAppVersionPackageParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.GetAppVersionPackage(c.GetAppVersionPackageParams, nil)
+	res, err := client.AppManager.GetAppVersionPackage(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1174,17 +1915,124 @@ func (*GetAppVersionPackageFilesCmd) GetActionName() string {
 }
 
 func (c *GetAppVersionPackageFilesCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.Files, "files", "", []string{}, "")
+	f.StringSliceVarP(&c.Files, "files", "", []string{}, "files.")
 	c.VersionID = new(string)
-	f.StringVarP(c.VersionID, "version_id", "", "", "")
+	f.StringVarP(c.VersionID, "version_id", "", "", "use version id to get file of package.")
 }
 
 func (c *GetAppVersionPackageFilesCmd) Run(out Out) error {
+	params := c.GetAppVersionPackageFilesParams
 
-	out.WriteRequest(c.GetAppVersionPackageFilesParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AppManager.GetAppVersionPackageFiles(c.GetAppVersionPackageFilesParams, nil)
+	res, err := client.AppManager.GetAppVersionPackageFiles(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type IsvPassAppVersionCmd struct {
+	*models.OpenpitrixPassAppVersionRequest
+}
+
+func NewIsvPassAppVersionCmd() Cmd {
+	cmd := &IsvPassAppVersionCmd{}
+	cmd.OpenpitrixPassAppVersionRequest = &models.OpenpitrixPassAppVersionRequest{}
+	return cmd
+}
+
+func (*IsvPassAppVersionCmd) GetActionName() string {
+	return "IsvPassAppVersion"
+}
+
+func (c *IsvPassAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to pass")
+}
+
+func (c *IsvPassAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewIsvPassAppVersionParams()
+	params.WithBody(c.OpenpitrixPassAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.IsvPassAppVersion(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type IsvRejectAppVersionCmd struct {
+	*models.OpenpitrixRejectAppVersionRequest
+}
+
+func NewIsvRejectAppVersionCmd() Cmd {
+	cmd := &IsvRejectAppVersionCmd{}
+	cmd.OpenpitrixRejectAppVersionRequest = &models.OpenpitrixRejectAppVersionRequest{}
+	return cmd
+}
+
+func (*IsvRejectAppVersionCmd) GetActionName() string {
+	return "IsvRejectAppVersion"
+}
+
+func (c *IsvRejectAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Message, "message", "", "", "reject message")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to reject")
+}
+
+func (c *IsvRejectAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewIsvRejectAppVersionParams()
+	params.WithBody(c.OpenpitrixRejectAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.IsvRejectAppVersion(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type IsvReviewAppVersionCmd struct {
+	*models.OpenpitrixReviewAppVersionRequest
+}
+
+func NewIsvReviewAppVersionCmd() Cmd {
+	cmd := &IsvReviewAppVersionCmd{}
+	cmd.OpenpitrixReviewAppVersionRequest = &models.OpenpitrixReviewAppVersionRequest{}
+	return cmd
+}
+
+func (*IsvReviewAppVersionCmd) GetActionName() string {
+	return "IsvReviewAppVersion"
+}
+
+func (c *IsvReviewAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to review")
+}
+
+func (c *IsvReviewAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewIsvReviewAppVersionParams()
+	params.WithBody(c.OpenpitrixReviewAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.IsvReviewAppVersion(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1209,15 +2057,17 @@ func (*ModifyAppCmd) GetActionName() string {
 }
 
 func (c *ModifyAppCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.AppID, "app_id", "", "", "")
-	f.StringVarP(&c.CategoryID, "category_id", "", "", "")
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Home, "home", "", "", "")
-	f.StringVarP(&c.Keywords, "keywords", "", "", "")
-	f.StringVarP(&c.Maintainers, "maintainers", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.Readme, "readme", "", "", "")
-	f.StringVarP(&c.Sources, "sources", "", "", "")
+	f.StringVarP(&c.Abstraction, "abstraction", "", "", "abstraction of app")
+	f.StringVarP(&c.AppID, "app_id", "", "", "required, id of app to modify")
+	f.StringVarP(&c.CategoryID, "category_id", "", "", "category id of the app")
+	f.StringVarP(&c.Description, "description", "", "", "description of the app")
+	f.StringVarP(&c.Home, "home", "", "", "home page of the app")
+	f.StringVarP(&c.Keywords, "keywords", "", "", "key words of the app")
+	f.StringVarP(&c.Maintainers, "maintainers", "", "", "maintainers who maintainer the app")
+	f.StringVarP(&c.Name, "name", "", "", "name of the app")
+	f.StringVarP(&c.Readme, "readme", "", "", "instructions of the app")
+	f.StringVarP(&c.Sources, "sources", "", "", "sources of app")
+	f.StringVarP(&c.Tos, "tos", "", "", "tos of app")
 }
 
 func (c *ModifyAppCmd) Run(out Out) error {
@@ -1253,10 +2103,10 @@ func (*ModifyAppVersionCmd) GetActionName() string {
 }
 
 func (c *ModifyAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.PackagePath, "package", "", "", "filepath of package. ")
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "app description")
+	f.StringVarP(&c.Name, "name", "", "", "app name")
+	f.StringVarP(&c.PackagePath, "package", "", "", "filepath of package. package of app to replace other")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, version id of app to modify")
 }
 
 func (c *ModifyAppVersionCmd) Run(out Out) error {
@@ -1283,41 +2133,6 @@ func (c *ModifyAppVersionCmd) Run(out Out) error {
 	return nil
 }
 
-type PassAppVersionCmd struct {
-	*models.OpenpitrixPassAppVersionRequest
-}
-
-func NewPassAppVersionCmd() Cmd {
-	cmd := &PassAppVersionCmd{}
-	cmd.OpenpitrixPassAppVersionRequest = &models.OpenpitrixPassAppVersionRequest{}
-	return cmd
-}
-
-func (*PassAppVersionCmd) GetActionName() string {
-	return "PassAppVersion"
-}
-
-func (c *PassAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
-}
-
-func (c *PassAppVersionCmd) Run(out Out) error {
-	params := app_manager.NewPassAppVersionParams()
-	params.WithBody(c.OpenpitrixPassAppVersionRequest)
-
-	out.WriteRequest(params)
-
-	client := getClient()
-	res, err := client.AppManager.PassAppVersion(params, nil)
-	if err != nil {
-		return err
-	}
-
-	out.WriteResponse(res.Payload)
-
-	return nil
-}
-
 type RecoverAppVersionCmd struct {
 	*models.OpenpitrixRecoverAppVersionRequest
 }
@@ -1333,7 +2148,7 @@ func (*RecoverAppVersionCmd) GetActionName() string {
 }
 
 func (c *RecoverAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to recover")
 }
 
 func (c *RecoverAppVersionCmd) Run(out Out) error {
@@ -1344,42 +2159,6 @@ func (c *RecoverAppVersionCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.AppManager.RecoverAppVersion(params, nil)
-	if err != nil {
-		return err
-	}
-
-	out.WriteResponse(res.Payload)
-
-	return nil
-}
-
-type RejectAppVersionCmd struct {
-	*models.OpenpitrixRejectAppVersionRequest
-}
-
-func NewRejectAppVersionCmd() Cmd {
-	cmd := &RejectAppVersionCmd{}
-	cmd.OpenpitrixRejectAppVersionRequest = &models.OpenpitrixRejectAppVersionRequest{}
-	return cmd
-}
-
-func (*RejectAppVersionCmd) GetActionName() string {
-	return "RejectAppVersion"
-}
-
-func (c *RejectAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Message, "message", "", "", "")
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
-}
-
-func (c *RejectAppVersionCmd) Run(out Out) error {
-	params := app_manager.NewRejectAppVersionParams()
-	params.WithBody(c.OpenpitrixRejectAppVersionRequest)
-
-	out.WriteRequest(params)
-
-	client := getClient()
-	res, err := client.AppManager.RejectAppVersion(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1404,7 +2183,7 @@ func (*ReleaseAppVersionCmd) GetActionName() string {
 }
 
 func (c *ReleaseAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to release")
 }
 
 func (c *ReleaseAppVersionCmd) Run(out Out) error {
@@ -1439,7 +2218,7 @@ func (*SubmitAppVersionCmd) GetActionName() string {
 }
 
 func (c *SubmitAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to submit")
 }
 
 func (c *SubmitAppVersionCmd) Run(out Out) error {
@@ -1474,7 +2253,7 @@ func (*SuspendAppVersionCmd) GetActionName() string {
 }
 
 func (c *SuspendAppVersionCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to suspend")
 }
 
 func (c *SuspendAppVersionCmd) Run(out Out) error {
@@ -1485,6 +2264,112 @@ func (c *SuspendAppVersionCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.AppManager.SuspendAppVersion(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type TechnicalPassAppVersionCmd struct {
+	*models.OpenpitrixPassAppVersionRequest
+}
+
+func NewTechnicalPassAppVersionCmd() Cmd {
+	cmd := &TechnicalPassAppVersionCmd{}
+	cmd.OpenpitrixPassAppVersionRequest = &models.OpenpitrixPassAppVersionRequest{}
+	return cmd
+}
+
+func (*TechnicalPassAppVersionCmd) GetActionName() string {
+	return "TechnicalPassAppVersion"
+}
+
+func (c *TechnicalPassAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to pass")
+}
+
+func (c *TechnicalPassAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewTechnicalPassAppVersionParams()
+	params.WithBody(c.OpenpitrixPassAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.TechnicalPassAppVersion(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type TechnicalRejectAppVersionCmd struct {
+	*models.OpenpitrixRejectAppVersionRequest
+}
+
+func NewTechnicalRejectAppVersionCmd() Cmd {
+	cmd := &TechnicalRejectAppVersionCmd{}
+	cmd.OpenpitrixRejectAppVersionRequest = &models.OpenpitrixRejectAppVersionRequest{}
+	return cmd
+}
+
+func (*TechnicalRejectAppVersionCmd) GetActionName() string {
+	return "TechnicalRejectAppVersion"
+}
+
+func (c *TechnicalRejectAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Message, "message", "", "", "reject message")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to reject")
+}
+
+func (c *TechnicalRejectAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewTechnicalRejectAppVersionParams()
+	params.WithBody(c.OpenpitrixRejectAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.TechnicalRejectAppVersion(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type TechnicalReviewAppVersionCmd struct {
+	*models.OpenpitrixReviewAppVersionRequest
+}
+
+func NewTechnicalReviewAppVersionCmd() Cmd {
+	cmd := &TechnicalReviewAppVersionCmd{}
+	cmd.OpenpitrixReviewAppVersionRequest = &models.OpenpitrixReviewAppVersionRequest{}
+	return cmd
+}
+
+func (*TechnicalReviewAppVersionCmd) GetActionName() string {
+	return "TechnicalReviewAppVersion"
+}
+
+func (c *TechnicalReviewAppVersionCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of version to review")
+}
+
+func (c *TechnicalReviewAppVersionCmd) Run(out Out) error {
+	params := app_manager.NewTechnicalReviewAppVersionParams()
+	params.WithBody(c.OpenpitrixReviewAppVersionRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.AppManager.TechnicalReviewAppVersion(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1510,8 +2395,8 @@ func (*UploadAppAttachmentCmd) GetActionName() string {
 }
 
 func (c *UploadAppAttachmentCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.AppID, "app_id", "", "", "")
-	f.StringVarP(&c.AttachmentContentPath, "attachment_content", "", "", "filepath of attachment__content. ")
+	f.StringVarP(&c.AppID, "app_id", "", "", "required, id of app to upload attachment")
+	f.StringVarP(&c.AttachmentContentPath, "attachment_content", "", "", "filepath of attachment_content. required, content of attachment")
 }
 
 func (c *UploadAppAttachmentCmd) Run(out Out) error {
@@ -1554,8 +2439,8 @@ func (*ValidatePackageCmd) GetActionName() string {
 }
 
 func (c *ValidatePackageCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.VersionPackagePath, "version_package", "", "", "filepath of version__package. ")
-	f.StringVarP(&c.VersionType, "version_type", "", "", "")
+	f.StringVarP(&c.VersionPackagePath, "version_package", "", "", "filepath of version_package. required, version package eg.[the wordpress-0.0.1.tgz will be encoded to bytes]")
+	f.StringVarP(&c.VersionType, "version_type", "", "", "optional, vmbased/helm")
 }
 
 func (c *ValidatePackageCmd) Run(out Out) error {
@@ -1597,14 +2482,19 @@ func (*GetAttachmentCmd) GetActionName() string {
 }
 
 func (c *GetAttachmentCmd) ParseFlag(f Flag) {
+	c.AttachmentID = new(string)
+	f.StringVarP(c.AttachmentID, "attachment_id", "", "", "required, use attachment id to get attachment.")
+	c.Filename = new(string)
+	f.StringVarP(c.Filename, "filename", "", "", "filename, attachment contain one more file.")
 }
 
 func (c *GetAttachmentCmd) Run(out Out) error {
+	params := c.GetAttachmentParams
 
-	out.WriteRequest(c.GetAttachmentParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.AttachmentService.GetAttachment(c.GetAttachmentParams, nil)
+	res, err := client.AttachmentService.GetAttachment(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1616,6 +2506,7 @@ func (c *GetAttachmentCmd) Run(out Out) error {
 
 type CreateCategoryCmd struct {
 	*models.OpenpitrixCreateCategoryRequest
+	IconPath string
 }
 
 func NewCreateCategoryCmd() Cmd {
@@ -1629,12 +2520,20 @@ func (*CreateCategoryCmd) GetActionName() string {
 }
 
 func (c *CreateCategoryCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Locale, "locale", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "category description")
+	f.StringVarP(&c.IconPath, "icon", "", "", "filepath of icon. category icon")
+	f.StringVarP(&c.Locale, "locale", "", "", "the i18n of this category, json format, sample: {&#34;zh_cn&#34;: &#34;数据库&#34;, &#34;en&#34;: &#34;database&#34;}")
+	f.StringVarP(&c.Name, "name", "", "", "required, category name")
 }
 
 func (c *CreateCategoryCmd) Run(out Out) error {
+	if c.IconPath != "" {
+		content, err := ioutil.ReadFile(c.IconPath)
+		if err != nil {
+			return err
+		}
+		c.Icon = strfmt.Base64(content)
+	}
 	params := category_manager.NewCreateCategoryParams()
 	params.WithBody(c.OpenpitrixCreateCategoryRequest)
 
@@ -1666,7 +2565,7 @@ func (*DeleteCategoriesCmd) GetActionName() string {
 }
 
 func (c *DeleteCategoriesCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "")
+	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "required, ids of category to delete")
 }
 
 func (c *DeleteCategoriesCmd) Run(out Out) error {
@@ -1701,27 +2600,29 @@ func (*DescribeCategoriesCmd) GetActionName() string {
 }
 
 func (c *DescribeCategoriesCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "")
+	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "category ids.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
-	f.StringSliceVarP(&c.Name, "name", "", []string{}, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	f.StringSliceVarP(&c.Name, "name", "", []string{}, "category name.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, can fields with these fields(category_id, status, locale, owner, name), default return all categories.")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
 }
 
 func (c *DescribeCategoriesCmd) Run(out Out) error {
+	params := c.DescribeCategoriesParams
 
-	out.WriteRequest(c.DescribeCategoriesParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.CategoryManager.DescribeCategories(c.DescribeCategoriesParams, nil)
+	res, err := client.CategoryManager.DescribeCategories(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1733,6 +2634,7 @@ func (c *DescribeCategoriesCmd) Run(out Out) error {
 
 type ModifyCategoryCmd struct {
 	*models.OpenpitrixModifyCategoryRequest
+	IconPath string
 }
 
 func NewModifyCategoryCmd() Cmd {
@@ -1746,13 +2648,21 @@ func (*ModifyCategoryCmd) GetActionName() string {
 }
 
 func (c *ModifyCategoryCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.CategoryID, "category_id", "", "", "")
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Locale, "locale", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
+	f.StringVarP(&c.CategoryID, "category_id", "", "", "required, id of category to modify")
+	f.StringVarP(&c.Description, "description", "", "", "category description")
+	f.StringVarP(&c.IconPath, "icon", "", "", "filepath of icon. category icon")
+	f.StringVarP(&c.Locale, "locale", "", "", "the i18n of this category, json format, sample: {&#34;zh_cn&#34;: &#34;数据库&#34;, &#34;en&#34;: &#34;database&#34;}")
+	f.StringVarP(&c.Name, "name", "", "", "category name")
 }
 
 func (c *ModifyCategoryCmd) Run(out Out) error {
+	if c.IconPath != "" {
+		content, err := ioutil.ReadFile(c.IconPath)
+		if err != nil {
+			return err
+		}
+		c.Icon = strfmt.Base64(content)
+	}
 	params := category_manager.NewModifyCategoryParams()
 	params.WithBody(c.OpenpitrixModifyCategoryRequest)
 
@@ -1784,9 +2694,9 @@ func (*AddClusterNodesCmd) GetActionName() string {
 }
 
 func (c *AddClusterNodesCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "")
-	f.StringVarP(&c.Role, "role", "", "", "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "required, id of cluster to add node")
+	f.StringVarP(&c.Role, "role", "", "", "required, role eg:[mysql|wordpress|...]")
 }
 
 func (c *AddClusterNodesCmd) Run(out Out) error {
@@ -1821,8 +2731,8 @@ func (*AttachKeyPairsCmd) GetActionName() string {
 }
 
 func (c *AttachKeyPairsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.KeyPairID, "key_pair_id", "", []string{}, "")
-	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "")
+	f.StringSliceVarP(&c.KeyPairID, "key_pair_id", "", []string{}, "ids of key pairs to attach")
+	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "ids of node to attached")
 }
 
 func (c *AttachKeyPairsCmd) Run(out Out) error {
@@ -1857,8 +2767,8 @@ func (*CeaseClustersCmd) GetActionName() string {
 }
 
 func (c *CeaseClustersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "required, ids of cluster to cease")
 }
 
 func (c *CeaseClustersCmd) Run(out Out) error {
@@ -1893,11 +2803,11 @@ func (*CreateClusterCmd) GetActionName() string {
 }
 
 func (c *CreateClusterCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringVarP(&c.AppID, "app_id", "", "", "")
-	f.StringVarP(&c.Conf, "conf", "", "", "")
-	f.StringVarP(&c.RuntimeID, "runtime_id", "", "", "")
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.AppID, "app_id", "", "", "required, id of app to run in cluster")
+	f.StringVarP(&c.Conf, "conf", "", "", "required, conf a json string, include cpu, memory info of cluster")
+	f.StringVarP(&c.RuntimeID, "runtime_id", "", "", "required, id of runtime")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of app version")
 }
 
 func (c *CreateClusterCmd) Run(out Out) error {
@@ -1908,6 +2818,45 @@ func (c *CreateClusterCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.ClusterManager.CreateCluster(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type CreateDebugClusterCmd struct {
+	*models.OpenpitrixCreateClusterRequest
+}
+
+func NewCreateDebugClusterCmd() Cmd {
+	cmd := &CreateDebugClusterCmd{}
+	cmd.OpenpitrixCreateClusterRequest = &models.OpenpitrixCreateClusterRequest{}
+	return cmd
+}
+
+func (*CreateDebugClusterCmd) GetActionName() string {
+	return "CreateDebugCluster"
+}
+
+func (c *CreateDebugClusterCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.AppID, "app_id", "", "", "required, id of app to run in cluster")
+	f.StringVarP(&c.Conf, "conf", "", "", "required, conf a json string, include cpu, memory info of cluster")
+	f.StringVarP(&c.RuntimeID, "runtime_id", "", "", "required, id of runtime")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "required, id of app version")
+}
+
+func (c *CreateDebugClusterCmd) Run(out Out) error {
+	params := cluster_manager.NewCreateDebugClusterParams()
+	params.WithBody(c.OpenpitrixCreateClusterRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.ClusterManager.CreateDebugCluster(params, nil)
 	if err != nil {
 		return err
 	}
@@ -1932,9 +2881,9 @@ func (*CreateKeyPairCmd) GetActionName() string {
 }
 
 func (c *CreateKeyPairCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.PubKey, "pub_key", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "keypair description")
+	f.StringVarP(&c.Name, "name", "", "", "keypair name")
+	f.StringVarP(&c.PubKey, "pub_key", "", "", "public key")
 }
 
 func (c *CreateKeyPairCmd) Run(out Out) error {
@@ -1969,9 +2918,9 @@ func (*DeleteClusterNodesCmd) GetActionName() string {
 }
 
 func (c *DeleteClusterNodesCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "")
-	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "required, id of cluster to delete node")
+	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "required, node ids")
 }
 
 func (c *DeleteClusterNodesCmd) Run(out Out) error {
@@ -2006,8 +2955,8 @@ func (*DeleteClustersCmd) GetActionName() string {
 }
 
 func (c *DeleteClustersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "required, ids of clusters to delete")
 }
 
 func (c *DeleteClustersCmd) Run(out Out) error {
@@ -2042,7 +2991,7 @@ func (*DeleteKeyPairsCmd) GetActionName() string {
 }
 
 func (c *DeleteKeyPairsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.KeyPairID, "key_pair_id", "", []string{}, "")
+	f.StringSliceVarP(&c.KeyPairID, "key_pair_id", "", []string{}, "required, ids of key pairs to delete")
 }
 
 func (c *DeleteKeyPairsCmd) Run(out Out) error {
@@ -2053,6 +3002,57 @@ func (c *DeleteKeyPairsCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.ClusterManager.DeleteKeyPairs(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeAppClustersCmd struct {
+	*cluster_manager.DescribeAppClustersParams
+}
+
+func NewDescribeAppClustersCmd() Cmd {
+	return &DescribeAppClustersCmd{
+		cluster_manager.NewDescribeAppClustersParams(),
+	}
+}
+
+func (*DescribeAppClustersCmd) GetActionName() string {
+	return "DescribeAppClusters"
+}
+
+func (c *DescribeAppClustersCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	c.CreatedDate = new(int64)
+	f.Int64VarP(c.CreatedDate, "created_date", "", 0, "cluster created duration eg.[1 day].")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(cluster_id, app_id, version_id, status, runtime_id, frontgate_id, owner, cluster_type).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|used|enabled|disabled|deleted|stopped|ceased].")
+	c.WithDetail = new(bool)
+	f.BoolVarP(c.WithDetail, "with_detail", "", false, "get cluster with detail.")
+}
+
+func (c *DescribeAppClustersCmd) Run(out Out) error {
+	params := c.DescribeAppClustersParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.ClusterManager.DescribeAppClusters(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2078,28 +3078,30 @@ func (*DescribeClusterNodesCmd) GetActionName() string {
 
 func (c *DescribeClusterNodesCmd) ParseFlag(f Flag) {
 	c.ClusterID = new(string)
-	f.StringVarP(c.ClusterID, "cluster_id", "", "", "")
+	f.StringVarP(c.ClusterID, "cluster_id", "", "", "cluster id.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
-	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "node ids.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(cluster_id, node_id, status, owner).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|used|enabled|disabled|deleted|stopped|ceased].")
 }
 
 func (c *DescribeClusterNodesCmd) Run(out Out) error {
+	params := c.DescribeClusterNodesParams
 
-	out.WriteRequest(c.DescribeClusterNodesParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.ClusterManager.DescribeClusterNodes(c.DescribeClusterNodesParams, nil)
+	res, err := client.ClusterManager.DescribeClusterNodes(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2124,35 +3126,151 @@ func (*DescribeClustersCmd) GetActionName() string {
 }
 
 func (c *DescribeClustersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "")
-	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "cluster ids.")
 	c.ClusterType = new(string)
-	f.StringVarP(c.ClusterType, "cluster_type", "", "", "")
+	f.StringVarP(c.ClusterType, "cluster_type", "", "", "cluster type, frontgate or normal cluster.")
+	c.CreatedDate = new(int64)
+	f.Int64VarP(c.CreatedDate, "created_date", "", 0, "cluster created duration eg.[1 day].")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
 	c.ExternalClusterID = new(string)
-	f.StringVarP(c.ExternalClusterID, "external_cluster_id", "", "", "")
-	f.StringSliceVarP(&c.FrontgateID, "frontgate_id", "", []string{}, "")
+	f.StringVarP(c.ExternalClusterID, "external_cluster_id", "", "", "external cluster id.")
+	f.StringSliceVarP(&c.FrontgateID, "frontgate_id", "", []string{}, "frontgate ids.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
-	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "runtime ids.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(cluster_id, app_id, version_id, status, runtime_id, frontgate_id, owner, cluster_type).")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
-	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "cluster status eg.[active|used|enabled|disabled|deleted|stopped|ceased].")
+	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "version ids.")
+	c.WithDetail = new(bool)
+	f.BoolVarP(c.WithDetail, "with_detail", "", false, "get cluster detail info or not.")
 }
 
 func (c *DescribeClustersCmd) Run(out Out) error {
+	params := c.DescribeClustersParams
 
-	out.WriteRequest(c.DescribeClustersParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.ClusterManager.DescribeClusters(c.DescribeClustersParams, nil)
+	res, err := client.ClusterManager.DescribeClusters(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeDebugAppClustersCmd struct {
+	*cluster_manager.DescribeDebugAppClustersParams
+}
+
+func NewDescribeDebugAppClustersCmd() Cmd {
+	return &DescribeDebugAppClustersCmd{
+		cluster_manager.NewDescribeDebugAppClustersParams(),
+	}
+}
+
+func (*DescribeDebugAppClustersCmd) GetActionName() string {
+	return "DescribeDebugAppClusters"
+}
+
+func (c *DescribeDebugAppClustersCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	c.CreatedDate = new(int64)
+	f.Int64VarP(c.CreatedDate, "created_date", "", 0, "cluster created duration eg.[1 day].")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(cluster_id, app_id, version_id, status, runtime_id, frontgate_id, owner, cluster_type).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|used|enabled|disabled|deleted|stopped|ceased].")
+	c.WithDetail = new(bool)
+	f.BoolVarP(c.WithDetail, "with_detail", "", false, "get cluster with detail.")
+}
+
+func (c *DescribeDebugAppClustersCmd) Run(out Out) error {
+	params := c.DescribeDebugAppClustersParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.ClusterManager.DescribeDebugAppClusters(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeDebugClustersCmd struct {
+	*cluster_manager.DescribeDebugClustersParams
+}
+
+func NewDescribeDebugClustersCmd() Cmd {
+	return &DescribeDebugClustersCmd{
+		cluster_manager.NewDescribeDebugClustersParams(),
+	}
+}
+
+func (*DescribeDebugClustersCmd) GetActionName() string {
+	return "DescribeDebugClusters"
+}
+
+func (c *DescribeDebugClustersCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.AppID, "app_id", "", []string{}, "app ids.")
+	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "cluster ids.")
+	c.ClusterType = new(string)
+	f.StringVarP(c.ClusterType, "cluster_type", "", "", "cluster type, frontgate or normal cluster.")
+	c.CreatedDate = new(int64)
+	f.Int64VarP(c.CreatedDate, "created_date", "", 0, "cluster created duration eg.[1 day].")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
+	c.ExternalClusterID = new(string)
+	f.StringVarP(c.ExternalClusterID, "external_cluster_id", "", "", "external cluster id.")
+	f.StringSliceVarP(&c.FrontgateID, "frontgate_id", "", []string{}, "frontgate ids.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "runtime ids.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(cluster_id, app_id, version_id, status, runtime_id, frontgate_id, owner, cluster_type).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "cluster status eg.[active|used|enabled|disabled|deleted|stopped|ceased].")
+	f.StringSliceVarP(&c.VersionID, "version_id", "", []string{}, "version ids.")
+	c.WithDetail = new(bool)
+	f.BoolVarP(c.WithDetail, "with_detail", "", false, "get cluster detail info or not.")
+}
+
+func (c *DescribeDebugClustersCmd) Run(out Out) error {
+	params := c.DescribeDebugClustersParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.ClusterManager.DescribeDebugClusters(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2178,28 +3296,30 @@ func (*DescribeKeyPairsCmd) GetActionName() string {
 
 func (c *DescribeKeyPairsCmd) ParseFlag(f Flag) {
 	c.Description = new(string)
-	f.StringVarP(c.Description, "description", "", "", "")
+	f.StringVarP(c.Description, "description", "", "", "key pair description.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
 	c.KeyPairID = new(string)
-	f.StringVarP(c.KeyPairID, "key_pair_id", "", "", "")
+	f.StringVarP(c.KeyPairID, "key_pair_id", "", "", "key pair id.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Name = new(string)
-	f.StringVarP(c.Name, "name", "", "", "")
+	f.StringVarP(c.Name, "name", "", "", "key pair name.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
 	c.PubKey = new(string)
-	f.StringVarP(c.PubKey, "pub_key", "", "", "")
+	f.StringVarP(c.PubKey, "pub_key", "", "", "public key.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, can filter with these fields(key_pair_id, name, owner).")
 }
 
 func (c *DescribeKeyPairsCmd) Run(out Out) error {
+	params := c.DescribeKeyPairsParams
 
-	out.WriteRequest(c.DescribeKeyPairsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.ClusterManager.DescribeKeyPairs(c.DescribeKeyPairsParams, nil)
+	res, err := client.ClusterManager.DescribeKeyPairs(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2224,25 +3344,26 @@ func (*DescribeSubnetsCmd) GetActionName() string {
 }
 
 func (c *DescribeSubnetsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
 	c.RuntimeID = new(string)
-	f.StringVarP(c.RuntimeID, "runtime_id", "", "", "")
-	f.StringSliceVarP(&c.SubnetID, "subnet_id", "", []string{}, "")
+	f.StringVarP(c.RuntimeID, "runtime_id", "", "", "required, id of runtime that contain subnet.")
+	f.StringSliceVarP(&c.SubnetID, "subnet_id", "", []string{}, "subnet ids.")
 	c.SubnetType = new(int64)
-	f.Int64VarP(c.SubnetType, "subnet_type", "", 0, "")
-	f.StringSliceVarP(&c.Zone, "zone", "", []string{}, "")
+	f.Int64VarP(c.SubnetType, "subnet_type", "", 0, "subnet type.")
+	f.StringSliceVarP(&c.Zone, "zone", "", []string{}, "zone eg.[pek3a|pek3b|...].")
 }
 
 func (c *DescribeSubnetsCmd) Run(out Out) error {
+	params := c.DescribeSubnetsParams
 
-	out.WriteRequest(c.DescribeSubnetsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.ClusterManager.DescribeSubnets(c.DescribeSubnetsParams, nil)
+	res, err := client.ClusterManager.DescribeSubnets(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2267,8 +3388,8 @@ func (*DetachKeyPairsCmd) GetActionName() string {
 }
 
 func (c *DetachKeyPairsCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.KeyPairID, "key_pair_id", "", []string{}, "")
-	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "")
+	f.StringSliceVarP(&c.KeyPairID, "key_pair_id", "", []string{}, "ids of key pairs to detach")
+	f.StringSliceVarP(&c.NodeID, "node_id", "", []string{}, "ids of nodes to detached")
 }
 
 func (c *DetachKeyPairsCmd) Run(out Out) error {
@@ -2306,11 +3427,12 @@ func (c *GetClusterStatisticsCmd) ParseFlag(f Flag) {
 }
 
 func (c *GetClusterStatisticsCmd) Run(out Out) error {
+	params := c.GetClusterStatisticsParams
 
-	out.WriteRequest(c.GetClusterStatisticsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.ClusterManager.GetClusterStatistics(c.GetClusterStatisticsParams, nil)
+	res, err := client.ClusterManager.GetClusterStatistics(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2335,9 +3457,9 @@ func (*ModifyClusterAttributesCmd) GetActionName() string {
 }
 
 func (c *ModifyClusterAttributesCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "")
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
+	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "required, id of cluster to modify")
+	f.StringVarP(&c.Description, "description", "", "", "cluster description")
+	f.StringVarP(&c.Name, "name", "", "", "cluster name")
 }
 
 func (c *ModifyClusterAttributesCmd) Run(out Out) error {
@@ -2372,8 +3494,8 @@ func (*ModifyClusterNodeAttributesCmd) GetActionName() string {
 }
 
 func (c *ModifyClusterNodeAttributesCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.NodeID, "node_id", "", "", "")
+	f.StringVarP(&c.Name, "name", "", "", "node name")
+	f.StringVarP(&c.NodeID, "node_id", "", "", "required, id of cluster node to modify")
 }
 
 func (c *ModifyClusterNodeAttributesCmd) Run(out Out) error {
@@ -2408,8 +3530,8 @@ func (*RecoverClustersCmd) GetActionName() string {
 }
 
 func (c *RecoverClustersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "required, ids of clusters to recover")
 }
 
 func (c *RecoverClustersCmd) Run(out Out) error {
@@ -2444,8 +3566,8 @@ func (*ResizeClusterCmd) GetActionName() string {
 }
 
 func (c *ResizeClusterCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "required, id of cluster to resize")
 }
 
 func (c *ResizeClusterCmd) Run(out Out) error {
@@ -2480,8 +3602,8 @@ func (*RollbackClusterCmd) GetActionName() string {
 }
 
 func (c *RollbackClusterCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "required, id of cluster to rollback")
 }
 
 func (c *RollbackClusterCmd) Run(out Out) error {
@@ -2516,8 +3638,8 @@ func (*StartClustersCmd) GetActionName() string {
 }
 
 func (c *StartClustersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "required, ids of cluster to start")
 }
 
 func (c *StartClustersCmd) Run(out Out) error {
@@ -2552,8 +3674,8 @@ func (*StopClustersCmd) GetActionName() string {
 }
 
 func (c *StopClustersCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringSliceVarP(&c.ClusterID, "cluster_id", "", []string{}, "required, ids of cluster to stop")
 }
 
 func (c *StopClustersCmd) Run(out Out) error {
@@ -2588,9 +3710,9 @@ func (*UpdateClusterEnvCmd) GetActionName() string {
 }
 
 func (c *UpdateClusterEnvCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "")
-	f.StringVarP(&c.Env, "env", "", "", "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "id of cluster to update env")
+	f.StringVarP(&c.Env, "env", "", "", "env")
 }
 
 func (c *UpdateClusterEnvCmd) Run(out Out) error {
@@ -2625,9 +3747,9 @@ func (*UpgradeClusterCmd) GetActionName() string {
 }
 
 func (c *UpgradeClusterCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "")
-	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "")
-	f.StringVarP(&c.VersionID, "version_id", "", "", "")
+	f.StringSliceVarP(&c.AdvancedParam, "advanced_param", "", []string{}, "advanced param")
+	f.StringVarP(&c.ClusterID, "cluster_id", "", "", "required, id of cluster to upgrade")
+	f.StringVarP(&c.VersionID, "version_id", "", "", "app version id")
 }
 
 func (c *UpgradeClusterCmd) Run(out Out) error {
@@ -2638,6 +3760,250 @@ func (c *UpgradeClusterCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.ClusterManager.UpgradeCluster(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeAppVendorStatisticsCmd struct {
+	*isv_manager.DescribeAppVendorStatisticsParams
+}
+
+func NewDescribeAppVendorStatisticsCmd() Cmd {
+	return &DescribeAppVendorStatisticsCmd{
+		isv_manager.NewDescribeAppVendorStatisticsParams(),
+	}
+}
+
+func (*DescribeAppVendorStatisticsCmd) GetActionName() string {
+	return "DescribeAppVendorStatistics"
+}
+
+func (c *DescribeAppVendorStatisticsCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(user_id, status).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[draft|submitted|passed|rejected|suspended|in-review|new].")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "user ids.")
+}
+
+func (c *DescribeAppVendorStatisticsCmd) Run(out Out) error {
+	params := c.DescribeAppVendorStatisticsParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.IsvManager.DescribeAppVendorStatistics(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeVendorVerifyInfosCmd struct {
+	*isv_manager.DescribeVendorVerifyInfosParams
+}
+
+func NewDescribeVendorVerifyInfosCmd() Cmd {
+	return &DescribeVendorVerifyInfosCmd{
+		isv_manager.NewDescribeVendorVerifyInfosParams(),
+	}
+}
+
+func (*DescribeVendorVerifyInfosCmd) GetActionName() string {
+	return "DescribeVendorVerifyInfos"
+}
+
+func (c *DescribeVendorVerifyInfosCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(user_id, status).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[draft|submitted|passed|rejected|suspended|in-review|new].")
+	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "user ids.")
+}
+
+func (c *DescribeVendorVerifyInfosCmd) Run(out Out) error {
+	params := c.DescribeVendorVerifyInfosParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.IsvManager.DescribeVendorVerifyInfos(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type GetVendorVerifyInfoCmd struct {
+	*isv_manager.GetVendorVerifyInfoParams
+}
+
+func NewGetVendorVerifyInfoCmd() Cmd {
+	return &GetVendorVerifyInfoCmd{
+		isv_manager.NewGetVendorVerifyInfoParams(),
+	}
+}
+
+func (*GetVendorVerifyInfoCmd) GetActionName() string {
+	return "GetVendorVerifyInfo"
+}
+
+func (c *GetVendorVerifyInfoCmd) ParseFlag(f Flag) {
+	c.UserID = new(string)
+	f.StringVarP(c.UserID, "user_id", "", "", "required, use user id to get vendor verify info.")
+}
+
+func (c *GetVendorVerifyInfoCmd) Run(out Out) error {
+	params := c.GetVendorVerifyInfoParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.IsvManager.GetVendorVerifyInfo(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type PassVendorVerifyInfoCmd struct {
+	*models.OpenpitrixPassVendorVerifyInfoRequest
+}
+
+func NewPassVendorVerifyInfoCmd() Cmd {
+	cmd := &PassVendorVerifyInfoCmd{}
+	cmd.OpenpitrixPassVendorVerifyInfoRequest = &models.OpenpitrixPassVendorVerifyInfoRequest{}
+	return cmd
+}
+
+func (*PassVendorVerifyInfoCmd) GetActionName() string {
+	return "PassVendorVerifyInfo"
+}
+
+func (c *PassVendorVerifyInfoCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.UserID, "user_id", "", "", "required, id of user to pass")
+}
+
+func (c *PassVendorVerifyInfoCmd) Run(out Out) error {
+	params := isv_manager.NewPassVendorVerifyInfoParams()
+	params.WithBody(c.OpenpitrixPassVendorVerifyInfoRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.IsvManager.PassVendorVerifyInfo(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type RejectVendorVerifyInfoCmd struct {
+	*models.OpenpitrixRejectVendorVerifyInfoRequest
+}
+
+func NewRejectVendorVerifyInfoCmd() Cmd {
+	cmd := &RejectVendorVerifyInfoCmd{}
+	cmd.OpenpitrixRejectVendorVerifyInfoRequest = &models.OpenpitrixRejectVendorVerifyInfoRequest{}
+	return cmd
+}
+
+func (*RejectVendorVerifyInfoCmd) GetActionName() string {
+	return "RejectVendorVerifyInfo"
+}
+
+func (c *RejectVendorVerifyInfoCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.RejectMessage, "reject_message", "", "", "reject message")
+	f.StringVarP(&c.UserID, "user_id", "", "", "required, id of user to reject")
+}
+
+func (c *RejectVendorVerifyInfoCmd) Run(out Out) error {
+	params := isv_manager.NewRejectVendorVerifyInfoParams()
+	params.WithBody(c.OpenpitrixRejectVendorVerifyInfoRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.IsvManager.RejectVendorVerifyInfo(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type SubmitVendorVerifyInfoCmd struct {
+	*models.OpenpitrixSubmitVendorVerifyInfoRequest
+}
+
+func NewSubmitVendorVerifyInfoCmd() Cmd {
+	cmd := &SubmitVendorVerifyInfoCmd{}
+	cmd.OpenpitrixSubmitVendorVerifyInfoRequest = &models.OpenpitrixSubmitVendorVerifyInfoRequest{}
+	return cmd
+}
+
+func (*SubmitVendorVerifyInfoCmd) GetActionName() string {
+	return "SubmitVendorVerifyInfo"
+}
+
+func (c *SubmitVendorVerifyInfoCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.AuthorizerEmail, "authorizer_email", "", "", "required, authorizer email eg. xxx@yunify.com")
+	f.StringVarP(&c.AuthorizerName, "authorizer_name", "", "", "required, authorizer name")
+	f.StringVarP(&c.AuthorizerPhone, "authorizer_phone", "", "", "authorizer phone, string of 11 digit")
+	f.StringVarP(&c.BankAccountName, "bank_account_name", "", "", "bank account name")
+	f.StringVarP(&c.BankAccountNumber, "bank_account_number", "", "", "bank account number")
+	f.StringVarP(&c.BankName, "bank_name", "", "", "bank name")
+	f.StringVarP(&c.CompanyName, "company_name", "", "", "required, company name")
+	f.StringVarP(&c.CompanyProfile, "company_profile", "", "", "company profile")
+	f.StringVarP(&c.CompanyWebsite, "company_website", "", "", "company website")
+	f.StringVarP(&c.UserID, "user_id", "", "", "required, id of user to submit")
+}
+
+func (c *SubmitVendorVerifyInfoCmd) Run(out Out) error {
+	params := isv_manager.NewSubmitVendorVerifyInfoParams()
+	params.WithBody(c.OpenpitrixSubmitVendorVerifyInfoRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.IsvManager.SubmitVendorVerifyInfo(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2663,34 +4029,40 @@ func (*DescribeJobsCmd) GetActionName() string {
 
 func (c *DescribeJobsCmd) ParseFlag(f Flag) {
 	c.AppID = new(string)
-	f.StringVarP(c.AppID, "app_id", "", "", "")
+	f.StringVarP(c.AppID, "app_id", "", "", "app id.")
 	c.ClusterID = new(string)
-	f.StringVarP(c.ClusterID, "cluster_id", "", "", "")
+	f.StringVarP(c.ClusterID, "cluster_id", "", "", "cluster id.")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select column to display.")
 	c.Executor = new(string)
-	f.StringVarP(c.Executor, "executor", "", "", "")
-	f.StringSliceVarP(&c.JobID, "job_id", "", []string{}, "")
+	f.StringVarP(c.Executor, "executor", "", "", "host name of server.")
+	f.StringSliceVarP(&c.JobID, "job_id", "", []string{}, "job ids.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "default is 20, max value is 200.")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "default is 0.")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
 	c.Provider = new(string)
-	f.StringVarP(c.Provider, "provider", "", "", "")
+	f.StringVarP(c.Provider, "provider", "", "", "runtime provider eg.[qingcloud|aliyun|aws|kubernetes].")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.RuntimeID = new(string)
-	f.StringVarP(c.RuntimeID, "runtime_id", "", "", "")
+	f.StringVarP(c.RuntimeID, "runtime_id", "", "", "runtime id.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(job_id, cluster_id, app_id, version_id, executor, provider, status, owner).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[successful|failed|running|pending].")
 	c.VersionID = new(string)
-	f.StringVarP(c.VersionID, "version_id", "", "", "")
+	f.StringVarP(c.VersionID, "version_id", "", "", "specific app version id to filter result.")
 }
 
 func (c *DescribeJobsCmd) Run(out Out) error {
+	params := c.DescribeJobsParams
 
-	out.WriteRequest(c.DescribeJobsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.JobManager.DescribeJobs(c.DescribeJobsParams, nil)
+	res, err := client.JobManager.DescribeJobs(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2788,26 +4160,27 @@ func (*DescribeMarketUsersCmd) GetActionName() string {
 
 func (c *DescribeMarketUsersCmd) ParseFlag(f Flag) {
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "default is 20, max value is 200.")
 	f.StringSliceVarP(&c.MarketID, "market_id", "", []string{}, "")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "default is 0.")
 	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
 	f.StringVarP(c.SearchWord, "search_word", "", "", "")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
 	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "")
 }
 
 func (c *DescribeMarketUsersCmd) Run(out Out) error {
+	params := c.DescribeMarketUsersParams
 
-	out.WriteRequest(c.DescribeMarketUsersParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.MarketManager.DescribeMarketUsers(c.DescribeMarketUsersParams, nil)
+	res, err := client.MarketManager.DescribeMarketUsers(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2833,29 +4206,30 @@ func (*DescribeMarketsCmd) GetActionName() string {
 
 func (c *DescribeMarketsCmd) ParseFlag(f Flag) {
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "default is 20, max value is 200.")
 	f.StringSliceVarP(&c.MarketID, "market_id", "", []string{}, "")
 	f.StringSliceVarP(&c.Name, "name", "", []string{}, "")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "default is 0.")
 	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
 	f.StringVarP(c.SearchWord, "search_word", "", "", "")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
 	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
 	f.StringSliceVarP(&c.UserID, "user_id", "", []string{}, "")
 	f.StringSliceVarP(&c.Visibility, "visibility", "", []string{}, "")
 }
 
 func (c *DescribeMarketsCmd) Run(out Out) error {
+	params := c.DescribeMarketsParams
 
-	out.WriteRequest(c.DescribeMarketsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.MarketManager.DescribeMarkets(c.DescribeMarketsParams, nil)
+	res, err := client.MarketManager.DescribeMarkets(params, nil)
 	if err != nil {
 		return err
 	}
@@ -2992,21 +4366,22 @@ func (*DescribeRepoEventsCmd) GetActionName() string {
 
 func (c *DescribeRepoEventsCmd) ParseFlag(f Flag) {
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
-	f.StringSliceVarP(&c.RepoEventID, "repo_event_id", "", []string{}, "")
-	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.RepoEventID, "repo_event_id", "", []string{}, "repository event ids.")
+	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "repository ids.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "repository event status eg.[failed|successful|working|pending].")
 }
 
 func (c *DescribeRepoEventsCmd) Run(out Out) error {
+	params := c.DescribeRepoEventsParams
 
-	out.WriteRequest(c.DescribeRepoEventsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.RepoIndexer.DescribeRepoEvents(c.DescribeRepoEventsParams, nil)
+	res, err := client.RepoIndexer.DescribeRepoEvents(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3031,7 +4406,7 @@ func (*IndexRepoCmd) GetActionName() string {
 }
 
 func (c *IndexRepoCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.RepoID, "repo_id", "", "", "")
+	f.StringVarP(&c.RepoID, "repo_id", "", "", "id of repository to index")
 }
 
 func (c *IndexRepoCmd) Run(out Out) error {
@@ -3066,17 +4441,17 @@ func (*CreateRepoCmd) GetActionName() string {
 }
 
 func (c *CreateRepoCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.AppDefaultStatus, "app_default_status", "", "", "")
-	f.StringVarP(&c.CategoryID, "category_id", "", "", "")
-	f.StringVarP(&c.Credential, "credential", "", "", "")
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Labels, "labels", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringSliceVarP(&c.Providers, "providers", "", []string{}, "")
-	f.StringVarP(&c.Selectors, "selectors", "", "", "")
-	f.StringVarP(&c.Type, "type", "", "", "")
-	f.StringVarP(&c.URL, "url", "", "", "")
-	f.StringVarP(&c.Visibility, "visibility", "", "", "")
+	f.StringVarP(&c.AppDefaultStatus, "app_default_status", "", "", "required app default status.eg:[draft|active]")
+	f.StringVarP(&c.CategoryID, "category_id", "", "", "category id")
+	f.StringVarP(&c.Credential, "credential", "", "", "required, credential of visiting the repository")
+	f.StringVarP(&c.Description, "description", "", "", "repository description")
+	f.StringVarP(&c.Labels, "labels", "", "", "a kv string, tags of server")
+	f.StringVarP(&c.Name, "name", "", "", "required, repository name")
+	f.StringSliceVarP(&c.Providers, "providers", "", []string{}, "required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]")
+	f.StringVarP(&c.Selectors, "selectors", "", "", "selectors of label")
+	f.StringVarP(&c.Type, "type", "", "", "repository type")
+	f.StringVarP(&c.URL, "url", "", "", "required, url of visiting the repository")
+	f.StringVarP(&c.Visibility, "visibility", "", "", "required, visibility eg:[public|private]")
 }
 
 func (c *CreateRepoCmd) Run(out Out) error {
@@ -3111,7 +4486,7 @@ func (*DeleteReposCmd) GetActionName() string {
 }
 
 func (c *DeleteReposCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "")
+	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "required, ids of repository to delete")
 }
 
 func (c *DeleteReposCmd) Run(out Out) error {
@@ -3146,41 +4521,42 @@ func (*DescribeReposCmd) GetActionName() string {
 }
 
 func (c *DescribeReposCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.AppDefaultStatus, "app_default_status", "", []string{}, "")
-	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "")
+	f.StringSliceVarP(&c.AppDefaultStatus, "app_default_status", "", []string{}, "app default status eg.[draft|active].")
+	f.StringSliceVarP(&c.CategoryID, "category_id", "", []string{}, "category ids.")
 	c.Controller = new(int32)
-	f.Int32VarP(c.Controller, "controller", "", 0, "")
+	f.Int32VarP(c.Controller, "controller", "", 0, "controller, value 0 for self resource, value1 for openpitrix resource.")
 	c.Label = new(string)
-	f.StringVarP(c.Label, "label", "", "", "")
+	f.StringVarP(c.Label, "label", "", "", "a kv string, tags of server.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
-	f.StringSliceVarP(&c.Name, "name", "", []string{}, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	f.StringSliceVarP(&c.Name, "name", "", []string{}, "repository name.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
-	f.StringSliceVarP(&c.Provider, "provider", "", []string{}, "")
-	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.Provider, "provider", "", []string{}, "runtime provider eg.[qingcloud|aliyun|aws|kubernetes].")
+	f.StringSliceVarP(&c.RepoID, "repo_id", "", []string{}, "repository ids.")
 	c.Reverse = new(bool)
-	f.BoolVarP(c.Reverse, "reverse", "", false, "")
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(repo_id, name, type, visibility, status, app_default_status, owner, controller).")
 	c.Selector = new(string)
-	f.StringVarP(c.Selector, "selector", "", "", "")
+	f.StringVarP(c.Selector, "selector", "", "", "selector of label.")
 	c.SortKey = new(string)
-	f.StringVarP(c.SortKey, "sort_key", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
-	f.StringSliceVarP(&c.Type, "type", "", []string{}, "")
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+	f.StringSliceVarP(&c.Type, "type", "", []string{}, "repository type.")
 	c.UserID = new(string)
-	f.StringVarP(c.UserID, "user_id", "", "", "")
-	f.StringSliceVarP(&c.Visibility, "visibility", "", []string{}, "")
+	f.StringVarP(c.UserID, "user_id", "", "", "user id.")
+	f.StringSliceVarP(&c.Visibility, "visibility", "", []string{}, "visibility eg:[public|private].")
 }
 
 func (c *DescribeReposCmd) Run(out Out) error {
+	params := c.DescribeReposParams
 
-	out.WriteRequest(c.DescribeReposParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.RepoManager.DescribeRepos(c.DescribeReposParams, nil)
+	res, err := client.RepoManager.DescribeRepos(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3205,18 +4581,18 @@ func (*ModifyRepoCmd) GetActionName() string {
 }
 
 func (c *ModifyRepoCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.AppDefaultStatus, "app_default_status", "", "", "")
-	f.StringVarP(&c.CategoryID, "category_id", "", "", "")
-	f.StringVarP(&c.Credential, "credential", "", "", "")
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Labels, "labels", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringSliceVarP(&c.Providers, "providers", "", []string{}, "")
-	f.StringVarP(&c.RepoID, "repo_id", "", "", "")
-	f.StringVarP(&c.Selectors, "selectors", "", "", "")
-	f.StringVarP(&c.Type, "type", "", "", "")
-	f.StringVarP(&c.URL, "url", "", "", "")
-	f.StringVarP(&c.Visibility, "visibility", "", "", "")
+	f.StringVarP(&c.AppDefaultStatus, "app_default_status", "", "", "app default status eg:[draft|active]")
+	f.StringVarP(&c.CategoryID, "category_id", "", "", "category id")
+	f.StringVarP(&c.Credential, "credential", "", "", "credential of visiting the repository")
+	f.StringVarP(&c.Description, "description", "", "", "repository description")
+	f.StringVarP(&c.Labels, "labels", "", "", "a kv string, tags of server")
+	f.StringVarP(&c.Name, "name", "", "", "repository name")
+	f.StringSliceVarP(&c.Providers, "providers", "", []string{}, "runtime provider eg.[qingcloud|aliyun|aws|kubernetes]")
+	f.StringVarP(&c.RepoID, "repo_id", "", "", "required, id of repository to modify")
+	f.StringVarP(&c.Selectors, "selectors", "", "", "selectors of label")
+	f.StringVarP(&c.Type, "type", "", "", "repository type")
+	f.StringVarP(&c.URL, "url", "", "", "url of visiting the repository")
+	f.StringVarP(&c.Visibility, "visibility", "", "", "visibility eg:[public|private]")
 }
 
 func (c *ModifyRepoCmd) Run(out Out) error {
@@ -3252,19 +4628,98 @@ func (*ValidateRepoCmd) GetActionName() string {
 
 func (c *ValidateRepoCmd) ParseFlag(f Flag) {
 	c.Credential = new(string)
-	f.StringVarP(c.Credential, "credential", "", "", "")
+	f.StringVarP(c.Credential, "credential", "", "", "required, credential of visiting the repository.")
 	c.Type = new(string)
-	f.StringVarP(c.Type, "type", "", "", "")
+	f.StringVarP(c.Type, "type", "", "", "required, type of repository.")
 	c.URL = new(string)
-	f.StringVarP(c.URL, "url", "", "", "")
+	f.StringVarP(c.URL, "url", "", "", "required, url of visiting the repository.")
 }
 
 func (c *ValidateRepoCmd) Run(out Out) error {
+	params := c.ValidateRepoParams
 
-	out.WriteRequest(c.ValidateRepoParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.RepoManager.ValidateRepo(c.ValidateRepoParams, nil)
+	res, err := client.RepoManager.ValidateRepo(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type CreateDebugRuntimeCmd struct {
+	*models.OpenpitrixCreateRuntimeRequest
+}
+
+func NewCreateDebugRuntimeCmd() Cmd {
+	cmd := &CreateDebugRuntimeCmd{}
+	cmd.OpenpitrixCreateRuntimeRequest = &models.OpenpitrixCreateRuntimeRequest{}
+	return cmd
+}
+
+func (*CreateDebugRuntimeCmd) GetActionName() string {
+	return "CreateDebugRuntime"
+}
+
+func (c *CreateDebugRuntimeCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Description, "description", "", "", "runtime description")
+	f.StringVarP(&c.Name, "name", "", "", "required, runtime name")
+	f.StringVarP(&c.Provider, "provider", "", "", "required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]")
+	f.StringVarP(&c.RuntimeCredentialID, "runtime_credential_id", "", "", "required, runtime credential id")
+	f.StringVarP(&c.Zone, "zone", "", "", "required, runtime zone eg.[pek3a|pek3b|...]")
+}
+
+func (c *CreateDebugRuntimeCmd) Run(out Out) error {
+	params := runtime_manager.NewCreateDebugRuntimeParams()
+	params.WithBody(c.OpenpitrixCreateRuntimeRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.CreateDebugRuntime(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type CreateDebugRuntimeCredentialCmd struct {
+	*models.OpenpitrixCreateRuntimeCredentialRequest
+}
+
+func NewCreateDebugRuntimeCredentialCmd() Cmd {
+	cmd := &CreateDebugRuntimeCredentialCmd{}
+	cmd.OpenpitrixCreateRuntimeCredentialRequest = &models.OpenpitrixCreateRuntimeCredentialRequest{}
+	return cmd
+}
+
+func (*CreateDebugRuntimeCredentialCmd) GetActionName() string {
+	return "CreateDebugRuntimeCredential"
+}
+
+func (c *CreateDebugRuntimeCredentialCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Description, "description", "", "", "runtime credential description")
+	f.StringVarP(&c.Name, "name", "", "", "runtime credential name")
+	f.StringVarP(&c.Provider, "provider", "", "", "required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]")
+	f.StringVarP(&c.RuntimeCredentialContent, "runtime_credential_content", "", "", "required, runtime credential content, a json file")
+	f.StringVarP(&c.RuntimeURL, "runtime_url", "", "", "required, runtime url")
+}
+
+func (c *CreateDebugRuntimeCredentialCmd) Run(out Out) error {
+	params := runtime_manager.NewCreateDebugRuntimeCredentialParams()
+	params.WithBody(c.OpenpitrixCreateRuntimeCredentialRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.CreateDebugRuntimeCredential(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3289,13 +4744,11 @@ func (*CreateRuntimeCmd) GetActionName() string {
 }
 
 func (c *CreateRuntimeCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Labels, "labels", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.Provider, "provider", "", "", "")
-	f.StringVarP(&c.RuntimeCredential, "runtime_credential", "", "", "")
-	f.StringVarP(&c.RuntimeURL, "runtime_url", "", "", "")
-	f.StringVarP(&c.Zone, "zone", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "runtime description")
+	f.StringVarP(&c.Name, "name", "", "", "required, runtime name")
+	f.StringVarP(&c.Provider, "provider", "", "", "required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]")
+	f.StringVarP(&c.RuntimeCredentialID, "runtime_credential_id", "", "", "required, runtime credential id")
+	f.StringVarP(&c.Zone, "zone", "", "", "required, runtime zone eg.[pek3a|pek3b|...]")
 }
 
 func (c *CreateRuntimeCmd) Run(out Out) error {
@@ -3306,6 +4759,80 @@ func (c *CreateRuntimeCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.RuntimeManager.CreateRuntime(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type CreateRuntimeCredentialCmd struct {
+	*models.OpenpitrixCreateRuntimeCredentialRequest
+}
+
+func NewCreateRuntimeCredentialCmd() Cmd {
+	cmd := &CreateRuntimeCredentialCmd{}
+	cmd.OpenpitrixCreateRuntimeCredentialRequest = &models.OpenpitrixCreateRuntimeCredentialRequest{}
+	return cmd
+}
+
+func (*CreateRuntimeCredentialCmd) GetActionName() string {
+	return "CreateRuntimeCredential"
+}
+
+func (c *CreateRuntimeCredentialCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Description, "description", "", "", "runtime credential description")
+	f.StringVarP(&c.Name, "name", "", "", "runtime credential name")
+	f.StringVarP(&c.Provider, "provider", "", "", "required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]")
+	f.StringVarP(&c.RuntimeCredentialContent, "runtime_credential_content", "", "", "required, runtime credential content, a json file")
+	f.StringVarP(&c.RuntimeURL, "runtime_url", "", "", "required, runtime url")
+}
+
+func (c *CreateRuntimeCredentialCmd) Run(out Out) error {
+	params := runtime_manager.NewCreateRuntimeCredentialParams()
+	params.WithBody(c.OpenpitrixCreateRuntimeCredentialRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.CreateRuntimeCredential(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DeleteRuntimeCredentialsCmd struct {
+	*models.OpenpitrixDeleteRuntimeCredentialsRequest
+}
+
+func NewDeleteRuntimeCredentialsCmd() Cmd {
+	cmd := &DeleteRuntimeCredentialsCmd{}
+	cmd.OpenpitrixDeleteRuntimeCredentialsRequest = &models.OpenpitrixDeleteRuntimeCredentialsRequest{}
+	return cmd
+}
+
+func (*DeleteRuntimeCredentialsCmd) GetActionName() string {
+	return "DeleteRuntimeCredentials"
+}
+
+func (c *DeleteRuntimeCredentialsCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.RuntimeCredentialID, "runtime_credential_id", "", []string{}, "required, ids of runtime credential to delete")
+}
+
+func (c *DeleteRuntimeCredentialsCmd) Run(out Out) error {
+	params := runtime_manager.NewDeleteRuntimeCredentialsParams()
+	params.WithBody(c.OpenpitrixDeleteRuntimeCredentialsRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.DeleteRuntimeCredentials(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3330,7 +4857,7 @@ func (*DeleteRuntimesCmd) GetActionName() string {
 }
 
 func (c *DeleteRuntimesCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "")
+	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "required, ids of runtime to delete")
 }
 
 func (c *DeleteRuntimesCmd) Run(out Out) error {
@@ -3341,6 +4868,150 @@ func (c *DeleteRuntimesCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.RuntimeManager.DeleteRuntimes(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeDebugRuntimeCredentialsCmd struct {
+	*runtime_manager.DescribeDebugRuntimeCredentialsParams
+}
+
+func NewDescribeDebugRuntimeCredentialsCmd() Cmd {
+	return &DescribeDebugRuntimeCredentialsCmd{
+		runtime_manager.NewDescribeDebugRuntimeCredentialsParams(),
+	}
+}
+
+func (*DescribeDebugRuntimeCredentialsCmd) GetActionName() string {
+	return "DescribeDebugRuntimeCredentials"
+}
+
+func (c *DescribeDebugRuntimeCredentialsCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.Provider, "provider", "", []string{}, "runtime provider eg.[qingcloud|aliyun|aws|kubernetes].")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RuntimeCredentialID, "runtime_credential_id", "", []string{}, "runtime credential ids.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key.")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+}
+
+func (c *DescribeDebugRuntimeCredentialsCmd) Run(out Out) error {
+	params := c.DescribeDebugRuntimeCredentialsParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.DescribeDebugRuntimeCredentials(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeDebugRuntimesCmd struct {
+	*runtime_manager.DescribeDebugRuntimesParams
+}
+
+func NewDescribeDebugRuntimesCmd() Cmd {
+	return &DescribeDebugRuntimesCmd{
+		runtime_manager.NewDescribeDebugRuntimesParams(),
+	}
+}
+
+func (*DescribeDebugRuntimesCmd) GetActionName() string {
+	return "DescribeDebugRuntimes"
+}
+
+func (c *DescribeDebugRuntimesCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.Provider, "provider", "", []string{}, "runtime provider eg.[qingcloud|aliyun|aws|kubernetes].")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "runtime ids.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(runtime_id, provider, zone, status, owner).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+}
+
+func (c *DescribeDebugRuntimesCmd) Run(out Out) error {
+	params := c.DescribeDebugRuntimesParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.DescribeDebugRuntimes(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type DescribeRuntimeCredentialsCmd struct {
+	*runtime_manager.DescribeRuntimeCredentialsParams
+}
+
+func NewDescribeRuntimeCredentialsCmd() Cmd {
+	return &DescribeRuntimeCredentialsCmd{
+		runtime_manager.NewDescribeRuntimeCredentialsParams(),
+	}
+}
+
+func (*DescribeRuntimeCredentialsCmd) GetActionName() string {
+	return "DescribeRuntimeCredentials"
+}
+
+func (c *DescribeRuntimeCredentialsCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
+	c.Limit = new(int64)
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
+	c.Offset = new(int64)
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.Provider, "provider", "", []string{}, "runtime provider eg.[qingcloud|aliyun|aws|kubernetes].")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RuntimeCredentialID, "runtime_credential_id", "", []string{}, "runtime credential ids.")
+	c.SearchWord = new(string)
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key.")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
+}
+
+func (c *DescribeRuntimeCredentialsCmd) Run(out Out) error {
+	params := c.DescribeRuntimeCredentialsParams
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.DescribeRuntimeCredentials(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3365,20 +5036,17 @@ func (*DescribeRuntimeProviderZonesCmd) GetActionName() string {
 }
 
 func (c *DescribeRuntimeProviderZonesCmd) ParseFlag(f Flag) {
-	c.Provider = new(string)
-	f.StringVarP(c.Provider, "provider", "", "", "")
-	c.RuntimeCredential = new(string)
-	f.StringVarP(c.RuntimeCredential, "runtime_credential", "", "", "")
-	c.RuntimeURL = new(string)
-	f.StringVarP(c.RuntimeURL, "runtime_url", "", "", "")
+	c.RuntimeCredentialID = new(string)
+	f.StringVarP(c.RuntimeCredentialID, "runtime_credential_id", "", "", "required, use runtime credential id to get run time provider zones.")
 }
 
 func (c *DescribeRuntimeProviderZonesCmd) Run(out Out) error {
+	params := c.DescribeRuntimeProviderZonesParams
 
-	out.WriteRequest(c.DescribeRuntimeProviderZonesParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.RuntimeManager.DescribeRuntimeProviderZones(c.DescribeRuntimeProviderZonesParams, nil)
+	res, err := client.RuntimeManager.DescribeRuntimeProviderZones(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3403,26 +5071,30 @@ func (*DescribeRuntimesCmd) GetActionName() string {
 }
 
 func (c *DescribeRuntimesCmd) ParseFlag(f Flag) {
-	c.Label = new(string)
-	f.StringVarP(c.Label, "label", "", "", "")
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
-	f.StringSliceVarP(&c.Provider, "provider", "", []string{}, "")
-	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	f.StringSliceVarP(&c.Provider, "provider", "", []string{}, "runtime provider eg.[qingcloud|aliyun|aws|kubernetes].")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
+	f.StringSliceVarP(&c.RuntimeID, "runtime_id", "", []string{}, "runtime ids.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(runtime_id, provider, zone, status, owner).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "status eg.[active|deleted].")
 }
 
 func (c *DescribeRuntimesCmd) Run(out Out) error {
+	params := c.DescribeRuntimesParams
 
-	out.WriteRequest(c.DescribeRuntimesParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.RuntimeManager.DescribeRuntimes(c.DescribeRuntimesParams, nil)
+	res, err := client.RuntimeManager.DescribeRuntimes(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3450,11 +5122,12 @@ func (c *GetRuntimeStatisticsCmd) ParseFlag(f Flag) {
 }
 
 func (c *GetRuntimeStatisticsCmd) Run(out Out) error {
+	params := c.GetRuntimeStatisticsParams
 
-	out.WriteRequest(c.GetRuntimeStatisticsParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.RuntimeManager.GetRuntimeStatistics(c.GetRuntimeStatisticsParams, nil)
+	res, err := client.RuntimeManager.GetRuntimeStatistics(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3479,11 +5152,10 @@ func (*ModifyRuntimeCmd) GetActionName() string {
 }
 
 func (c *ModifyRuntimeCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.Description, "description", "", "", "")
-	f.StringVarP(&c.Labels, "labels", "", "", "")
-	f.StringVarP(&c.Name, "name", "", "", "")
-	f.StringVarP(&c.RuntimeCredential, "runtime_credential", "", "", "")
-	f.StringVarP(&c.RuntimeID, "runtime_id", "", "", "")
+	f.StringVarP(&c.Description, "description", "", "", "runtime description")
+	f.StringVarP(&c.Name, "name", "", "", "runtime name")
+	f.StringVarP(&c.RuntimeCredentialID, "runtime_credential_id", "", "", "runtime credential id")
+	f.StringVarP(&c.RuntimeID, "runtime_id", "", "", "required, id of runtime to modify")
 }
 
 func (c *ModifyRuntimeCmd) Run(out Out) error {
@@ -3494,6 +5166,184 @@ func (c *ModifyRuntimeCmd) Run(out Out) error {
 
 	client := getClient()
 	res, err := client.RuntimeManager.ModifyRuntime(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type ModifyRuntimeCredentialCmd struct {
+	*models.OpenpitrixModifyRuntimeCredentialRequest
+}
+
+func NewModifyRuntimeCredentialCmd() Cmd {
+	cmd := &ModifyRuntimeCredentialCmd{}
+	cmd.OpenpitrixModifyRuntimeCredentialRequest = &models.OpenpitrixModifyRuntimeCredentialRequest{}
+	return cmd
+}
+
+func (*ModifyRuntimeCredentialCmd) GetActionName() string {
+	return "ModifyRuntimeCredential"
+}
+
+func (c *ModifyRuntimeCredentialCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Description, "description", "", "", "runtime credential description")
+	f.StringVarP(&c.Name, "name", "", "", "runtime credential name")
+	f.StringVarP(&c.RuntimeCredentialContent, "runtime_credential_content", "", "", "runtime credential content, a json file")
+	f.StringVarP(&c.RuntimeCredentialID, "runtime_credential_id", "", "", "required, id of runtime credential to modify")
+}
+
+func (c *ModifyRuntimeCredentialCmd) Run(out Out) error {
+	params := runtime_manager.NewModifyRuntimeCredentialParams()
+	params.WithBody(c.OpenpitrixModifyRuntimeCredentialRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.ModifyRuntimeCredential(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type ValidateRuntimeCredentialCmd struct {
+	*models.OpenpitrixValidateRuntimeCredentialRequest
+}
+
+func NewValidateRuntimeCredentialCmd() Cmd {
+	cmd := &ValidateRuntimeCredentialCmd{}
+	cmd.OpenpitrixValidateRuntimeCredentialRequest = &models.OpenpitrixValidateRuntimeCredentialRequest{}
+	return cmd
+}
+
+func (*ValidateRuntimeCredentialCmd) GetActionName() string {
+	return "ValidateRuntimeCredential"
+}
+
+func (c *ValidateRuntimeCredentialCmd) ParseFlag(f Flag) {
+	f.StringVarP(&c.Provider, "provider", "", "", "required, runtime provider eg.[qingcloud|aliyun|aws|kubernetes]")
+	f.StringVarP(&c.RuntimeCredentialContent, "runtime_credential_content", "", "", "required, runtime url")
+	f.StringVarP(&c.RuntimeURL, "runtime_url", "", "", "required, runtime url")
+}
+
+func (c *ValidateRuntimeCredentialCmd) Run(out Out) error {
+	params := runtime_manager.NewValidateRuntimeCredentialParams()
+	params.WithBody(c.OpenpitrixValidateRuntimeCredentialRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.RuntimeManager.ValidateRuntimeCredential(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type GetServiceConfigCmd struct {
+	*models.OpenpitrixGetServiceConfigRequest
+}
+
+func NewGetServiceConfigCmd() Cmd {
+	cmd := &GetServiceConfigCmd{}
+	cmd.OpenpitrixGetServiceConfigRequest = &models.OpenpitrixGetServiceConfigRequest{}
+	return cmd
+}
+
+func (*GetServiceConfigCmd) GetActionName() string {
+	return "GetServiceConfig"
+}
+
+func (c *GetServiceConfigCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.ServiceType, "service_type", "", []string{}, "service type eg.[runtime]")
+}
+
+func (c *GetServiceConfigCmd) Run(out Out) error {
+	params := service_config.NewGetServiceConfigParams()
+	params.WithBody(c.OpenpitrixGetServiceConfigRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.ServiceConfig.GetServiceConfig(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type SetServiceConfigCmd struct {
+	*models.OpenpitrixSetServiceConfigRequest
+}
+
+func NewSetServiceConfigCmd() Cmd {
+	cmd := &SetServiceConfigCmd{}
+	cmd.OpenpitrixSetServiceConfigRequest = &models.OpenpitrixSetServiceConfigRequest{}
+	return cmd
+}
+
+func (*SetServiceConfigCmd) GetActionName() string {
+	return "SetServiceConfig"
+}
+
+func (c *SetServiceConfigCmd) ParseFlag(f Flag) {
+}
+
+func (c *SetServiceConfigCmd) Run(out Out) error {
+	params := service_config.NewSetServiceConfigParams()
+	params.WithBody(c.OpenpitrixSetServiceConfigRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.ServiceConfig.SetServiceConfig(params, nil)
+	if err != nil {
+		return err
+	}
+
+	out.WriteResponse(res.Payload)
+
+	return nil
+}
+
+type ValidateEmailServiceCmd struct {
+	*models.OpenpitrixValidateEmailServiceRequest
+}
+
+func NewValidateEmailServiceCmd() Cmd {
+	cmd := &ValidateEmailServiceCmd{}
+	cmd.OpenpitrixValidateEmailServiceRequest = &models.OpenpitrixValidateEmailServiceRequest{}
+	return cmd
+}
+
+func (*ValidateEmailServiceCmd) GetActionName() string {
+	return "ValidateEmailService"
+}
+
+func (c *ValidateEmailServiceCmd) ParseFlag(f Flag) {
+}
+
+func (c *ValidateEmailServiceCmd) Run(out Out) error {
+	params := service_config.NewValidateEmailServiceParams()
+	params.WithBody(c.OpenpitrixValidateEmailServiceRequest)
+
+	out.WriteRequest(params)
+
+	client := getClient()
+	res, err := client.ServiceConfig.ValidateEmailService(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3518,28 +5368,34 @@ func (*DescribeTasksCmd) GetActionName() string {
 }
 
 func (c *DescribeTasksCmd) ParseFlag(f Flag) {
+	f.StringSliceVarP(&c.DisplayColumns, "display_columns", "", []string{}, "select columns to display.")
 	c.Executor = new(string)
-	f.StringVarP(c.Executor, "executor", "", "", "")
-	f.StringSliceVarP(&c.JobID, "job_id", "", []string{}, "")
+	f.StringVarP(c.Executor, "executor", "", "", "host name of server.")
+	f.StringSliceVarP(&c.JobID, "job_id", "", []string{}, "job ids.")
 	c.Limit = new(int64)
-	f.Int64VarP(c.Limit, "limit", "", 20, "default is 20, max value is 200.")
+	f.Int64VarP(c.Limit, "limit", "", 20, "data limit per page, default value 20, max value 200.")
 	c.Offset = new(int64)
-	f.Int64VarP(c.Offset, "offset", "", 0, "default is 0.")
-	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "")
+	f.Int64VarP(c.Offset, "offset", "", 0, "data offset, default 0.")
+	f.StringSliceVarP(&c.Owner, "owner", "", []string{}, "owner.")
+	c.Reverse = new(bool)
+	f.BoolVarP(c.Reverse, "reverse", "", false, "value = 0 sort ASC, value = 1 sort DESC.")
 	c.SearchWord = new(string)
-	f.StringVarP(c.SearchWord, "search_word", "", "", "")
-	f.StringSliceVarP(&c.Status, "status", "", []string{}, "")
+	f.StringVarP(c.SearchWord, "search_word", "", "", "query key, support these fields(job_id, task_id, executor, status, owner).")
+	c.SortKey = new(string)
+	f.StringVarP(c.SortKey, "sort_key", "", "", "sort key, order by sort_key, default create_time.")
+	f.StringSliceVarP(&c.Status, "status", "", []string{}, "task status eg.[running|successful|failed|pending].")
 	c.Target = new(string)
-	f.StringVarP(c.Target, "target", "", "", "")
-	f.StringSliceVarP(&c.TaskID, "task_id", "", []string{}, "")
+	f.StringVarP(c.Target, "target", "", "", "target eg.[runtime|pilot].")
+	f.StringSliceVarP(&c.TaskID, "task_id", "", []string{}, "task ids.")
 }
 
 func (c *DescribeTasksCmd) Run(out Out) error {
+	params := c.DescribeTasksParams
 
-	out.WriteRequest(c.DescribeTasksParams)
+	out.WriteRequest(params)
 
 	client := getClient()
-	res, err := client.TaskManager.DescribeTasks(c.DescribeTasksParams, nil)
+	res, err := client.TaskManager.DescribeTasks(params, nil)
 	if err != nil {
 		return err
 	}
@@ -3564,7 +5420,7 @@ func (*RetryTasksCmd) GetActionName() string {
 }
 
 func (c *RetryTasksCmd) ParseFlag(f Flag) {
-	f.StringSliceVarP(&c.TaskID, "task_id", "", []string{}, "")
+	f.StringSliceVarP(&c.TaskID, "task_id", "", []string{}, "ids of task to retry")
 }
 
 func (c *RetryTasksCmd) Run(out Out) error {
@@ -3599,7 +5455,7 @@ func (*CreateClientCmd) GetActionName() string {
 }
 
 func (c *CreateClientCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.UserID, "user_id", "", "", "")
+	f.StringVarP(&c.UserID, "user_id", "", "", "required, user id for create client")
 }
 
 func (c *CreateClientCmd) Run(out Out) error {
@@ -3634,13 +5490,13 @@ func (*TokenCmd) GetActionName() string {
 }
 
 func (c *TokenCmd) ParseFlag(f Flag) {
-	f.StringVarP(&c.ClientID, "client_id", "", "", "")
-	f.StringVarP(&c.ClientSecret, "client_secret", "", "", "")
-	f.StringVarP(&c.GrantType, "grant_type", "", "", "")
-	f.StringVarP(&c.Password, "password", "", "", "")
-	f.StringVarP(&c.RefreshToken, "refresh_token", "", "", "")
-	f.StringVarP(&c.Scope, "scope", "", "", "")
-	f.StringVarP(&c.Username, "username", "", "", "")
+	f.StringVarP(&c.ClientID, "client_id", "", "", "required, client id")
+	f.StringVarP(&c.ClientSecret, "client_secret", "", "", "required, used for validate client credentials")
+	f.StringVarP(&c.GrantType, "grant_type", "", "", "required, type of client request verification.eg.[client_credentials or password or refresh_token]")
+	f.StringVarP(&c.Password, "password", "", "", "required or not depend on grant_type, user&#39;s password")
+	f.StringVarP(&c.RefreshToken, "refresh_token", "", "", "required or not depend on grant_type, refresh token to check whether token expired")
+	f.StringVarP(&c.Scope, "scope", "", "", "scope")
+	f.StringVarP(&c.Username, "username", "", "", "required or not depend on grant_type, user&#39;s name")
 }
 
 func (c *TokenCmd) Run(out Out) error {

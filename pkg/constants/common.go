@@ -9,48 +9,58 @@ import (
 )
 
 const (
-	prefix              = "openpitrix-"
-	ApiGatewayHost      = prefix + "api-gateway"
-	RepoManagerHost     = prefix + "repo-manager"
-	AppManagerHost      = prefix + "app-manager"
-	RuntimeManagerHost  = prefix + "runtime-manager"
-	ClusterManagerHost  = prefix + "cluster-manager"
-	JobManagerHost      = prefix + "job-manager"
-	TaskManagerHost     = prefix + "task-manager"
-	PilotServiceHost    = prefix + "pilot-service"
-	IAMServiceHost      = prefix + "iam-service"
-	RepoIndexerHost     = prefix + "repo-indexer"
-	CategoryManagerHost = prefix + "category-manager"
-
-	MarketManagerHost = prefix + "market-manager"
-
-	AttachmentManagerHost = prefix + "attachment-manager"
+	prefix                     = "openpitrix-"
+	ProviderPrefix             = "openpitrix-rp-"
+	ApiGatewayHost             = prefix + "api-gateway"
+	RepoManagerHost            = prefix + "repo-manager"
+	AppManagerHost             = prefix + "app-manager"
+	RuntimeManagerHost         = prefix + "runtime-manager"
+	ClusterManagerHost         = prefix + "cluster-manager"
+	JobManagerHost             = prefix + "job-manager"
+	TaskManagerHost            = prefix + "task-manager"
+	PilotServiceHost           = prefix + "pilot-service"
+	AccountServiceHost         = prefix + "account-service"
+	IMServiceHost              = prefix + "im-service"
+	AMServiceHost              = prefix + "am-service"
+	RepoIndexerHost            = prefix + "repo-indexer"
+	CategoryManagerHost        = prefix + "category-manager"
+	RuntimeProviderManagerHost = prefix + "rp-manager"
+	NotificationHost           = prefix + "notification"
+	MarketManagerHost          = prefix + "market-manager"
+	AttachmentManagerHost      = prefix + "attachment-manager"
+	IsvManagerHost             = prefix + "isv-manager"
 )
 
 const (
-	ApiGatewayPort          = 9100 // 91 is similar as Pi, Open[Pi]trix
-	RepoManagerPort         = 9101
-	AppManagerPort          = 9102
-	RuntimeManagerPort      = 9103
-	ClusterManagerPort      = 9104
-	JobManagerPort          = 9106
-	TaskManagerPort         = 9107
-	RepoIndexerPort         = 9108
-	PilotServicePort        = 9110
-	FrontgateServicePort    = 9111
-	DroneServicePort        = 9112
-	CategoryManagerPort     = 9113
-	PilotTlsListenPort      = 9114 // public service for frontgate
-	IAMServicePort          = 9115
-	FrontgateFileServerPort = 9116
-	MarketManagerPort       = 9117
-	EtcdServicePort         = 2379
-
-	AttachmentManagerPort = 9120
+	ApiGatewayPort             = 9100 // 91 is similar as Pi, Open[Pi]trix
+	RepoManagerPort            = 9101
+	AppManagerPort             = 9102
+	RuntimeManagerPort         = 9103
+	ClusterManagerPort         = 9104
+	JobManagerPort             = 9106
+	TaskManagerPort            = 9107
+	RepoIndexerPort            = 9108
+	PilotServicePort           = 9110
+	FrontgateServicePort       = 9111
+	DroneServicePort           = 9112
+	CategoryManagerPort        = 9113
+	PilotTlsListenPort         = 9114 // public service for frontgate
+	AccountServicePort         = 9115
+	FrontgateFileServerPort    = 9116
+	MarketManagerPort          = 9117
+	IsvManagerPort             = 9118
+	IMServicePort              = 9119
+	AMServicePort              = 9120
+	EtcdServicePort            = 2379
+	AttachmentManagerPort      = 9120
+	RuntimeProviderManagerPort = 9121
+	NotificationPort           = 9201
+	ServiceConfigPort          = 9202
 )
 
 const (
 	StatusActive      = "active"
+	StatusUsed        = "used"
 	StatusEnabled     = "enabled"
 	StatusDisabled    = "disabled"
 	StatusCreating    = "creating"
@@ -85,6 +95,8 @@ const (
 	StatusPassed    = "passed"
 	StatusRejected  = "rejected"
 	StatusSuspended = "suspended"
+	StatusInReview  = "in-review"
+	StatusNew       = "new"
 )
 
 var DeletedStatuses = []string{
@@ -141,11 +153,12 @@ const (
 )
 
 const (
-	ProviderQingCloud  = "qingcloud"
-	ProviderKubernetes = "kubernetes"
-	ProviderAWS        = "aws"
-	ProviderAliyun     = "aliyun"
-	TargetPilot        = "pilot"
+	ProviderQingCloud   = "qingcloud"
+	ProviderKubernetes  = "kubernetes"
+	ProviderAWS         = "aws"
+	ProviderAliyun      = "aliyun"
+	ProviderTypeVmbased = "vmbased"
+	TargetPilot         = "pilot"
 )
 
 const (
@@ -182,6 +195,13 @@ const (
 	ServiceUpgrade        = "upgrade"
 )
 
+const (
+	NfContentTypeInvite = "invite"
+	NfContentTypeVerify = "verify"
+
+	NfTypeEmail = "email"
+)
+
 var ServiceNames = []string{
 	ServiceInit, ServiceStart, ServiceStop, ServiceScaleIn, ServiceScaleOut, ServiceRestart,
 	ServiceDestroy, ServiceBackup, ServiceRestore, ServiceDeleteSnapshot, ServiceUpgrade,
@@ -197,32 +217,29 @@ const (
 	RetryInterval = 3 * time.Second
 )
 
-var SupportRoles = []string{
-	RoleUser,
-	RoleDeveloper,
-	RoleGlobalAdmin,
-}
-var AllRoles = []string{
-	RoleUser,
-	RoleDeveloper,
-	RoleGlobalAdmin,
-}
-var AllDeveloperRoles = []string{
-	RoleDeveloper,
-	RoleGlobalAdmin,
-}
-var AllAdminRoles = []string{
-	RoleGlobalAdmin,
-}
-
 const (
 	RoleUser        = "user"
 	RoleDeveloper   = "developer"
+	RoleIsv         = "isv"
 	RoleGlobalAdmin = "global_admin"
+
+	PortalGlobalAdmin = "global_admin"
 
 	GrantTypeClientCredentials = "client_credentials"
 	GrantTypePassword          = "password"
 	GrantTypeRefreshToken      = "refresh_token"
+
+	OperatorTypeGlobalAdmin = "global_admin"
+	OperatorTypeDeveloper   = "developer"
+	OperatorTypeBusiness    = "business"
+	OperatorTypeTechnical   = "technical"
+	OperatorTypeIsv         = "isv"
+
+	ActionBundleBusinessReview  = "business_review"
+	ActionBundleTechnicalReview = "technical_review"
+	ActionBundleIsvReview       = "isv_review"
+	ActionBundleIsvApply        = "isv_apply"
+	ActionBundleIsvAuth         = "isv_auth"
 )
 
 var GrantTypeTokens = []string{
@@ -239,4 +256,16 @@ var AllowedAppDefaultStatus = []string{
 	"",
 	StatusDraft,
 	StatusActive,
+}
+
+const (
+	ServiceTypeNotification = "notification"
+	ServiceTypeRuntime      = "runtime"
+	ServiceTypeBasicConfig  = "basic_config"
+)
+
+var ServiceTypes = []string{
+	ServiceTypeNotification,
+	ServiceTypeRuntime,
+	ServiceTypeBasicConfig,
 }

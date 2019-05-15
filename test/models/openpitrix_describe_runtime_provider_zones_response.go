@@ -16,10 +16,10 @@ import (
 // swagger:model openpitrixDescribeRuntimeProviderZonesResponse
 type OpenpitrixDescribeRuntimeProviderZonesResponse struct {
 
-	// provider
-	Provider string `json:"provider,omitempty"`
+	// runtime credential id
+	RuntimeCredentialID string `json:"runtime_credential_id,omitempty"`
 
-	// zone
+	// list of zone
 	Zone []string `json:"zone"`
 }
 

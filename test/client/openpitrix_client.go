@@ -11,16 +11,19 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
+	"openpitrix.io/openpitrix/test/client/access_manager"
 	"openpitrix.io/openpitrix/test/client/account_manager"
 	"openpitrix.io/openpitrix/test/client/app_manager"
 	"openpitrix.io/openpitrix/test/client/attachment_service"
 	"openpitrix.io/openpitrix/test/client/category_manager"
 	"openpitrix.io/openpitrix/test/client/cluster_manager"
+	"openpitrix.io/openpitrix/test/client/isv_manager"
 	"openpitrix.io/openpitrix/test/client/job_manager"
 	"openpitrix.io/openpitrix/test/client/market_manager"
 	"openpitrix.io/openpitrix/test/client/repo_indexer"
 	"openpitrix.io/openpitrix/test/client/repo_manager"
 	"openpitrix.io/openpitrix/test/client/runtime_manager"
+	"openpitrix.io/openpitrix/test/client/service_config"
 	"openpitrix.io/openpitrix/test/client/task_manager"
 	"openpitrix.io/openpitrix/test/client/token_manager"
 )
@@ -66,6 +69,8 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Openpitrix
 	cli := new(Openpitrix)
 	cli.Transport = transport
 
+	cli.AccessManager = access_manager.New(transport, formats)
+
 	cli.AccountManager = account_manager.New(transport, formats)
 
 	cli.AppManager = app_manager.New(transport, formats)
@@ -76,6 +81,8 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Openpitrix
 
 	cli.ClusterManager = cluster_manager.New(transport, formats)
 
+	cli.IsvManager = isv_manager.New(transport, formats)
+
 	cli.JobManager = job_manager.New(transport, formats)
 
 	cli.MarketManager = market_manager.New(transport, formats)
@@ -85,6 +92,8 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Openpitrix
 	cli.RepoManager = repo_manager.New(transport, formats)
 
 	cli.RuntimeManager = runtime_manager.New(transport, formats)
+
+	cli.ServiceConfig = service_config.New(transport, formats)
 
 	cli.TaskManager = task_manager.New(transport, formats)
 
@@ -134,6 +143,8 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 
 // Openpitrix is a client for openpitrix
 type Openpitrix struct {
+	AccessManager *access_manager.Client
+
 	AccountManager *account_manager.Client
 
 	AppManager *app_manager.Client
@@ -144,6 +155,8 @@ type Openpitrix struct {
 
 	ClusterManager *cluster_manager.Client
 
+	IsvManager *isv_manager.Client
+
 	JobManager *job_manager.Client
 
 	MarketManager *market_manager.Client
@@ -153,6 +166,8 @@ type Openpitrix struct {
 	RepoManager *repo_manager.Client
 
 	RuntimeManager *runtime_manager.Client
+
+	ServiceConfig *service_config.Client
 
 	TaskManager *task_manager.Client
 
@@ -165,6 +180,8 @@ type Openpitrix struct {
 func (c *Openpitrix) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
 
+	c.AccessManager.SetTransport(transport)
+
 	c.AccountManager.SetTransport(transport)
 
 	c.AppManager.SetTransport(transport)
@@ -175,6 +192,8 @@ func (c *Openpitrix) SetTransport(transport runtime.ClientTransport) {
 
 	c.ClusterManager.SetTransport(transport)
 
+	c.IsvManager.SetTransport(transport)
+
 	c.JobManager.SetTransport(transport)
 
 	c.MarketManager.SetTransport(transport)
@@ -184,6 +203,8 @@ func (c *Openpitrix) SetTransport(transport runtime.ClientTransport) {
 	c.RepoManager.SetTransport(transport)
 
 	c.RuntimeManager.SetTransport(transport)
+
+	c.ServiceConfig.SetTransport(transport)
 
 	c.TaskManager.SetTransport(transport)
 

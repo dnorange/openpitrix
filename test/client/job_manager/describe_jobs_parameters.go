@@ -63,35 +63,80 @@ for the describe jobs operation typically these are written to a http.Request
 */
 type DescribeJobsParams struct {
 
-	/*AppID*/
+	/*AppID
+	  app id.
+
+	*/
 	AppID *string
-	/*ClusterID*/
+	/*ClusterID
+	  cluster id.
+
+	*/
 	ClusterID *string
-	/*Executor*/
+	/*DisplayColumns
+	  select column to display.
+
+	*/
+	DisplayColumns []string
+	/*Executor
+	  host name of server.
+
+	*/
 	Executor *string
-	/*JobID*/
+	/*JobID
+	  job ids.
+
+	*/
 	JobID []string
 	/*Limit
-	  default is 20, max value is 200.
+	  data limit per page, default value 20, max value 200.
 
 	*/
 	Limit *int64
 	/*Offset
-	  default is 0.
+	  data offset, default 0.
 
 	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  owner.
+
+	*/
 	Owner []string
-	/*Provider*/
+	/*Provider
+	  runtime provider eg.[qingcloud|aliyun|aws|kubernetes].
+
+	*/
 	Provider *string
-	/*RuntimeID*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
+	Reverse *bool
+	/*RuntimeID
+	  runtime id.
+
+	*/
 	RuntimeID *string
-	/*SearchWord*/
+	/*SearchWord
+	  query key, support these fields(job_id, cluster_id, app_id, version_id, executor, provider, status, owner).
+
+	*/
 	SearchWord *string
-	/*Status*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
+	SortKey *string
+	/*Status
+	  status eg.[successful|failed|running|pending].
+
+	*/
 	Status []string
-	/*VersionID*/
+	/*VersionID
+	  specific app version id to filter result.
+
+	*/
 	VersionID *string
 
 	timeout    time.Duration
@@ -152,6 +197,17 @@ func (o *DescribeJobsParams) WithClusterID(clusterID *string) *DescribeJobsParam
 // SetClusterID adds the clusterId to the describe jobs params
 func (o *DescribeJobsParams) SetClusterID(clusterID *string) {
 	o.ClusterID = clusterID
+}
+
+// WithDisplayColumns adds the displayColumns to the describe jobs params
+func (o *DescribeJobsParams) WithDisplayColumns(displayColumns []string) *DescribeJobsParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe jobs params
+func (o *DescribeJobsParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithExecutor adds the executor to the describe jobs params
@@ -220,6 +276,17 @@ func (o *DescribeJobsParams) SetProvider(provider *string) {
 	o.Provider = provider
 }
 
+// WithReverse adds the reverse to the describe jobs params
+func (o *DescribeJobsParams) WithReverse(reverse *bool) *DescribeJobsParams {
+	o.SetReverse(reverse)
+	return o
+}
+
+// SetReverse adds the reverse to the describe jobs params
+func (o *DescribeJobsParams) SetReverse(reverse *bool) {
+	o.Reverse = reverse
+}
+
 // WithRuntimeID adds the runtimeID to the describe jobs params
 func (o *DescribeJobsParams) WithRuntimeID(runtimeID *string) *DescribeJobsParams {
 	o.SetRuntimeID(runtimeID)
@@ -240,6 +307,17 @@ func (o *DescribeJobsParams) WithSearchWord(searchWord *string) *DescribeJobsPar
 // SetSearchWord adds the searchWord to the describe jobs params
 func (o *DescribeJobsParams) SetSearchWord(searchWord *string) {
 	o.SearchWord = searchWord
+}
+
+// WithSortKey adds the sortKey to the describe jobs params
+func (o *DescribeJobsParams) WithSortKey(sortKey *string) *DescribeJobsParams {
+	o.SetSortKey(sortKey)
+	return o
+}
+
+// SetSortKey adds the sortKey to the describe jobs params
+func (o *DescribeJobsParams) SetSortKey(sortKey *string) {
+	o.SortKey = sortKey
 }
 
 // WithStatus adds the status to the describe jobs params
@@ -302,6 +380,14 @@ func (o *DescribeJobsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 			}
 		}
 
+	}
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
+		return err
 	}
 
 	if o.Executor != nil {
@@ -384,6 +470,22 @@ func (o *DescribeJobsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 
 	}
 
+	if o.Reverse != nil {
+
+		// query param reverse
+		var qrReverse bool
+		if o.Reverse != nil {
+			qrReverse = *o.Reverse
+		}
+		qReverse := swag.FormatBool(qrReverse)
+		if qReverse != "" {
+			if err := r.SetQueryParam("reverse", qReverse); err != nil {
+				return err
+			}
+		}
+
+	}
+
 	if o.RuntimeID != nil {
 
 		// query param runtime_id
@@ -410,6 +512,22 @@ func (o *DescribeJobsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 		qSearchWord := qrSearchWord
 		if qSearchWord != "" {
 			if err := r.SetQueryParam("search_word", qSearchWord); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	if o.SortKey != nil {
+
+		// query param sort_key
+		var qrSortKey string
+		if o.SortKey != nil {
+			qrSortKey = *o.SortKey
+		}
+		qSortKey := qrSortKey
+		if qSortKey != "" {
+			if err := r.SetQueryParam("sort_key", qSortKey); err != nil {
 				return err
 			}
 		}

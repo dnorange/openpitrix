@@ -63,29 +63,65 @@ for the describe tasks operation typically these are written to a http.Request
 */
 type DescribeTasksParams struct {
 
-	/*Executor*/
+	/*DisplayColumns
+	  select columns to display.
+
+	*/
+	DisplayColumns []string
+	/*Executor
+	  host name of server.
+
+	*/
 	Executor *string
-	/*JobID*/
+	/*JobID
+	  job ids.
+
+	*/
 	JobID []string
 	/*Limit
-	  default is 20, max value is 200.
+	  data limit per page, default value 20, max value 200.
 
 	*/
 	Limit *int64
 	/*Offset
-	  default is 0.
+	  data offset, default 0.
 
 	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  owner.
+
+	*/
 	Owner []string
-	/*SearchWord*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
+	Reverse *bool
+	/*SearchWord
+	  query key, support these fields(job_id, task_id, executor, status, owner).
+
+	*/
 	SearchWord *string
-	/*Status*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
+	SortKey *string
+	/*Status
+	  task status eg.[running|successful|failed|pending].
+
+	*/
 	Status []string
-	/*Target*/
+	/*Target
+	  target eg.[runtime|pilot].
+
+	*/
 	Target *string
-	/*TaskID*/
+	/*TaskID
+	  task ids.
+
+	*/
 	TaskID []string
 
 	timeout    time.Duration
@@ -124,6 +160,17 @@ func (o *DescribeTasksParams) WithHTTPClient(client *http.Client) *DescribeTasks
 // SetHTTPClient adds the HTTPClient to the describe tasks params
 func (o *DescribeTasksParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
+}
+
+// WithDisplayColumns adds the displayColumns to the describe tasks params
+func (o *DescribeTasksParams) WithDisplayColumns(displayColumns []string) *DescribeTasksParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe tasks params
+func (o *DescribeTasksParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithExecutor adds the executor to the describe tasks params
@@ -181,6 +228,17 @@ func (o *DescribeTasksParams) SetOwner(owner []string) {
 	o.Owner = owner
 }
 
+// WithReverse adds the reverse to the describe tasks params
+func (o *DescribeTasksParams) WithReverse(reverse *bool) *DescribeTasksParams {
+	o.SetReverse(reverse)
+	return o
+}
+
+// SetReverse adds the reverse to the describe tasks params
+func (o *DescribeTasksParams) SetReverse(reverse *bool) {
+	o.Reverse = reverse
+}
+
 // WithSearchWord adds the searchWord to the describe tasks params
 func (o *DescribeTasksParams) WithSearchWord(searchWord *string) *DescribeTasksParams {
 	o.SetSearchWord(searchWord)
@@ -190,6 +248,17 @@ func (o *DescribeTasksParams) WithSearchWord(searchWord *string) *DescribeTasksP
 // SetSearchWord adds the searchWord to the describe tasks params
 func (o *DescribeTasksParams) SetSearchWord(searchWord *string) {
 	o.SearchWord = searchWord
+}
+
+// WithSortKey adds the sortKey to the describe tasks params
+func (o *DescribeTasksParams) WithSortKey(sortKey *string) *DescribeTasksParams {
+	o.SetSortKey(sortKey)
+	return o
+}
+
+// SetSortKey adds the sortKey to the describe tasks params
+func (o *DescribeTasksParams) SetSortKey(sortKey *string) {
+	o.SortKey = sortKey
 }
 
 // WithStatus adds the status to the describe tasks params
@@ -232,6 +301,14 @@ func (o *DescribeTasksParams) WriteToRequest(r runtime.ClientRequest, reg strfmt
 		return err
 	}
 	var res []error
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
+		return err
+	}
 
 	if o.Executor != nil {
 
@@ -297,6 +374,22 @@ func (o *DescribeTasksParams) WriteToRequest(r runtime.ClientRequest, reg strfmt
 		return err
 	}
 
+	if o.Reverse != nil {
+
+		// query param reverse
+		var qrReverse bool
+		if o.Reverse != nil {
+			qrReverse = *o.Reverse
+		}
+		qReverse := swag.FormatBool(qrReverse)
+		if qReverse != "" {
+			if err := r.SetQueryParam("reverse", qReverse); err != nil {
+				return err
+			}
+		}
+
+	}
+
 	if o.SearchWord != nil {
 
 		// query param search_word
@@ -307,6 +400,22 @@ func (o *DescribeTasksParams) WriteToRequest(r runtime.ClientRequest, reg strfmt
 		qSearchWord := qrSearchWord
 		if qSearchWord != "" {
 			if err := r.SetQueryParam("search_word", qSearchWord); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	if o.SortKey != nil {
+
+		// query param sort_key
+		var qrSortKey string
+		if o.SortKey != nil {
+			qrSortKey = *o.SortKey
+		}
+		qSortKey := qrSortKey
+		if qSortKey != "" {
+			if err := r.SetQueryParam("sort_key", qSortKey); err != nil {
 				return err
 			}
 		}

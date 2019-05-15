@@ -63,31 +63,75 @@ for the describe app versions operation typically these are written to a http.Re
 */
 type DescribeAppVersionsParams struct {
 
-	/*AppID*/
+	/*AppID
+	  app ids.
+
+	*/
 	AppID []string
-	/*Description*/
+	/*Description
+	  description.
+
+	*/
 	Description []string
-	/*Limit*/
+	/*DisplayColumns
+	  select columns to display.
+
+	*/
+	DisplayColumns []string
+	/*Limit
+	  data limit per page, default value 20, max value 200.
+
+	*/
 	Limit *int64
-	/*Name*/
+	/*Name
+	  app version name.
+
+	*/
 	Name []string
-	/*Offset*/
+	/*Offset
+	  data offset, default 0.
+
+	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  owner.
+
+	*/
 	Owner []string
-	/*PackageName*/
+	/*PackageName
+	  app version package name.
+
+	*/
 	PackageName []string
-	/*Reverse*/
+	/*Reverse
+	  value = 0 sort ASC, value = 1 sort DESC.
+
+	*/
 	Reverse *bool
-	/*SearchWord*/
+	/*SearchWord
+	  query key, support these fields(version_id, app_id, name, owner, description, package_name, status, type).
+
+	*/
 	SearchWord *string
-	/*SortKey*/
+	/*SortKey
+	  sort key, order by sort_key, default create_time.
+
+	*/
 	SortKey *string
-	/*Status*/
+	/*Status
+	  app version status eg.[draft|submitted|passed|rejected|active|in-review|deleted|suspended].
+
+	*/
 	Status []string
-	/*Type*/
+	/*Type
+	  app version type.
+
+	*/
 	Type []string
-	/*VersionID*/
+	/*VersionID
+	  app version ids.
+
+	*/
 	VersionID []string
 
 	timeout    time.Duration
@@ -148,6 +192,17 @@ func (o *DescribeAppVersionsParams) WithDescription(description []string) *Descr
 // SetDescription adds the description to the describe app versions params
 func (o *DescribeAppVersionsParams) SetDescription(description []string) {
 	o.Description = description
+}
+
+// WithDisplayColumns adds the displayColumns to the describe app versions params
+func (o *DescribeAppVersionsParams) WithDisplayColumns(displayColumns []string) *DescribeAppVersionsParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe app versions params
+func (o *DescribeAppVersionsParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithLimit adds the limit to the describe app versions params
@@ -292,6 +347,14 @@ func (o *DescribeAppVersionsParams) WriteToRequest(r runtime.ClientRequest, reg 
 	joinedDescription := swag.JoinByFormat(valuesDescription, "multi")
 	// query array param description
 	if err := r.SetQueryParam("description", joinedDescription...); err != nil {
+		return err
+	}
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
 		return err
 	}
 

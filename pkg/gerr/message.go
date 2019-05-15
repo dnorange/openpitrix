@@ -62,10 +62,30 @@ var (
 		en:   "password incorrect",
 		zhCN: "密码不正确",
 	}
+	ErrorRuntimeCredentialExists = ErrorMessage{
+		Name: "runtime_credential_exists",
+		en:   "runtime credential exists",
+		zhCN: "环境授权信息已存在",
+	}
+	ErrorUnsupportedRuntimeProvider = ErrorMessage{
+		Name: "unsupported_runtime_provider",
+		en:   "unsupported runtime provider [%s]",
+		zhCN: "不支持云环境服务商[%s]",
+	}
+	ErrorRuntimeExists = ErrorMessage{
+		Name: "runtime_exists",
+		en:   "runtime exists",
+		zhCN: "环境已存在",
+	}
 	ErrorEmailExists = ErrorMessage{
 		Name: "email_exists",
 		en:   "email [%s] exists",
 		zhCN: "邮箱[%s]已存在",
+	}
+	ErrorEmailNotExists = ErrorMessage{
+		Name: "email_not_exists",
+		en:   "email [%s] not exists",
+		zhCN: "邮箱[%s]不存在",
 	}
 	ErrorCreateResourcesFailed = ErrorMessage{
 		Name: "create_resources_failed",
@@ -86,6 +106,11 @@ var (
 		Name: "delete_resource_failed",
 		en:   "delete resource [%s] failed",
 		zhCN: "删除资源[%s]失败",
+	}
+	ErrorDeleteFrontgateWithClustersFailed = ErrorMessage{
+		Name: "delete_frontgate_with_clusters_failed",
+		en:   "delete frontgate [%s] with clusters [%s] failed",
+		zhCN: "删除代理[%s]失败，仍有[%s]依赖",
 	}
 	ErrorUpgradeResourceFailed = ErrorMessage{
 		Name: "upgrade_resource_failed",
@@ -182,6 +207,11 @@ var (
 		en:   "subnet [%s] not found or vpc not bind eip",
 		zhCN: "没有找到子网[%s]或者VPC没有绑定公网IP",
 	}
+	ErrorThereAreNoAvailableSubnet = ErrorMessage{
+		Name: "there_are_no_available_subnet",
+		en:   "there are no available subnet",
+		zhCN: "没有可用的子网",
+	}
 	ErrorProviderNotFound = ErrorMessage{
 		Name: "provider_not_found",
 		en:   "provider [%s] not found",
@@ -242,11 +272,6 @@ var (
 		en:   "illegal URL format [%s]",
 		zhCN: "非法的URL格式[%s]",
 	}
-	ErrorIllegalLabelFormat = ErrorMessage{
-		Name: "illegal_label_format",
-		en:   "illegal label format",
-		zhCN: "非法的标签格式",
-	}
 	ErrorConflictRepoName = ErrorMessage{
 		Name: "conflict_repo_name",
 		en:   "conflict repo name [%s]",
@@ -287,6 +312,11 @@ var (
 		en:   "app version [%s] has incorrect status [%s], cannot execute the current action",
 		zhCN: "应用版本[%s]状态为[%s], 无法执行此操作",
 	}
+	ErrorAppVersionInReview = ErrorMessage{
+		Name: "app_version_in_review",
+		en:   "app version is under review, app cannot be modified",
+		zhCN: "应用版本审核中, 应用无法修改",
+	}
 	ErrorLoadPackageFailed = ErrorMessage{
 		Name: "load_package_failed",
 		en:   "load package failed, reason: [%s]",
@@ -306,6 +336,11 @@ var (
 		Name: "app_version_exists",
 		en:   "app version [%s:%s] exists",
 		zhCN: "应用版本[%s:%s]已存在",
+	}
+	ErrorCompanyNameExists = ErrorMessage{
+		Name: "company_name_exists",
+		en:   "company name [%s] exists",
+		zhCN: "公司名称[%s]已存在",
 	}
 	ErrorCannotAccessRepo = ErrorMessage{
 		Name: "cannot_access_repo",
@@ -371,5 +406,90 @@ var (
 		Name: "image_decode_failed",
 		en:   "image decode failed",
 		zhCN: "图片解码失败",
+	}
+	ErrorIllegalEmailFormat = ErrorMessage{
+		Name: "illegal_email_format",
+		en:   "illegal Email format [%s]",
+		zhCN: "非法的Email格式[%s]",
+	}
+	ErrorIllegalPhoneNumFormat = ErrorMessage{
+		Name: "illegal_phone_num_format",
+		en:   "illegal phone number format [%s]",
+		zhCN: "非法的电话号码格式[%s]",
+	}
+	ErrorIllegalBankAccountNumberFormat = ErrorMessage{
+		Name: "illegal_bankAccountNumber_format",
+		en:   "illegal BankAccountNumber format [%s]",
+		zhCN: "非法的银行账号格式[%s]",
+	}
+	ErrorGroupHadMembers = ErrorMessage{
+		Name: "group_had_members",
+		en:   "group had members",
+		zhCN: "组内还有成员",
+	}
+	ErrorSetNotificationConfig = ErrorMessage{
+		Name: "error_set_notification_config",
+		en:   "set notification config failed",
+		zhCN: "设置通知服务配置失败",
+	}
+	ErrorSetServiceConfig = ErrorMessage{
+		Name: "error_set_service_config",
+		en:   "set service config failed",
+		zhCN: "设置服务配置失败",
+	}
+	ErrorGetNotificationConfig = ErrorMessage{
+		Name: "error_get_notification_config",
+		en:   "get notification config failed",
+		zhCN: "查看通知服务配置失败",
+	}
+	ErrorCannotDeleteUsers = ErrorMessage{
+		Name: "error_cannot_delete_users",
+		en:   "cannot delete users",
+		zhCN: "无法删除用户",
+	}
+	ErrorCannotDeleteGroups = ErrorMessage{
+		Name: "error_cannot_delete_groups",
+		en:   "cannot delete groups",
+		zhCN: "无法删除用户组",
+	}
+	ErrorGroupNotFound = ErrorMessage{
+		Name: "error_group_not_found",
+		en:   "group [%s] not found",
+		zhCN: "没有找到用户组[%s]",
+	}
+	ErrorGroupAccessDenied = ErrorMessage{
+		Name: "error_group_access_denied",
+		en:   "access denied for group [%s]",
+		zhCN: "拒绝访问用户组[%s]",
+	}
+	ErrorUserNotFound = ErrorMessage{
+		Name: "error_user_not_found",
+		en:   "user [%s] not found",
+		zhCN: "没有找到用户[%s]",
+	}
+	ErrorUserAccessDenied = ErrorMessage{
+		Name: "error_user_access_denied",
+		en:   "access denied for user [%s]",
+		zhCN: "拒绝访问用户[%s]",
+	}
+	ErrorCannotJoinGroup = ErrorMessage{
+		Name: "error_cannot_join_group",
+		en:   "cannot join group",
+		zhCN: "无法加入用户组",
+	}
+	ErrorCannotLeaveGroup = ErrorMessage{
+		Name: "error_cannot_leave_group",
+		en:   "cannot leave group",
+		zhCN: "无法离开用户组",
+	}
+	ErrorCannotCreateUserWithRole = ErrorMessage{
+		Name: "error_cannot_create_user_with_role",
+		en:   "cannot create user with role [%s]",
+		zhCN: "无法创建[%s]角色的用户",
+	}
+	ErrorValidateEmailService = ErrorMessage{
+		Name: "error_validate_email_service",
+		en:   "validate email service failed",
+		zhCN: "验证邮件服务配置失败",
 	}
 )

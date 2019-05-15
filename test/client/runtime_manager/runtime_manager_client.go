@@ -25,6 +25,64 @@ type Client struct {
 }
 
 /*
+CreateDebugRuntime creates debug runtime
+*/
+func (a *Client) CreateDebugRuntime(params *CreateDebugRuntimeParams, authInfo runtime.ClientAuthInfoWriter) (*CreateDebugRuntimeOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewCreateDebugRuntimeParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "CreateDebugRuntime",
+		Method:             "POST",
+		PathPattern:        "/v1/debug_runtimes",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &CreateDebugRuntimeReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*CreateDebugRuntimeOK), nil
+
+}
+
+/*
+CreateDebugRuntimeCredential creates debug runtime credential
+*/
+func (a *Client) CreateDebugRuntimeCredential(params *CreateDebugRuntimeCredentialParams, authInfo runtime.ClientAuthInfoWriter) (*CreateDebugRuntimeCredentialOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewCreateDebugRuntimeCredentialParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "CreateDebugRuntimeCredential",
+		Method:             "POST",
+		PathPattern:        "/v1/debug_runtimes/credentials",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &CreateDebugRuntimeCredentialReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*CreateDebugRuntimeCredentialOK), nil
+
+}
+
+/*
 CreateRuntime creates runtime
 */
 func (a *Client) CreateRuntime(params *CreateRuntimeParams, authInfo runtime.ClientAuthInfoWriter) (*CreateRuntimeOK, error) {
@@ -50,6 +108,64 @@ func (a *Client) CreateRuntime(params *CreateRuntimeParams, authInfo runtime.Cli
 		return nil, err
 	}
 	return result.(*CreateRuntimeOK), nil
+
+}
+
+/*
+CreateRuntimeCredential creates runtime credential
+*/
+func (a *Client) CreateRuntimeCredential(params *CreateRuntimeCredentialParams, authInfo runtime.ClientAuthInfoWriter) (*CreateRuntimeCredentialOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewCreateRuntimeCredentialParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "CreateRuntimeCredential",
+		Method:             "POST",
+		PathPattern:        "/v1/runtimes/credentials",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &CreateRuntimeCredentialReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*CreateRuntimeCredentialOK), nil
+
+}
+
+/*
+DeleteRuntimeCredentials batches delete runtime credentials
+*/
+func (a *Client) DeleteRuntimeCredentials(params *DeleteRuntimeCredentialsParams, authInfo runtime.ClientAuthInfoWriter) (*DeleteRuntimeCredentialsOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewDeleteRuntimeCredentialsParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "DeleteRuntimeCredentials",
+		Method:             "DELETE",
+		PathPattern:        "/v1/runtimes/credentials",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &DeleteRuntimeCredentialsReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*DeleteRuntimeCredentialsOK), nil
 
 }
 
@@ -83,7 +199,94 @@ func (a *Client) DeleteRuntimes(params *DeleteRuntimesParams, authInfo runtime.C
 }
 
 /*
-DescribeRuntimeProviderZones describes runtime provider zones
+DescribeDebugRuntimeCredentials gets debug runtime credentials filter with these fields runtime credential id status provider owner default return all debug runtime credentials
+*/
+func (a *Client) DescribeDebugRuntimeCredentials(params *DescribeDebugRuntimeCredentialsParams, authInfo runtime.ClientAuthInfoWriter) (*DescribeDebugRuntimeCredentialsOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewDescribeDebugRuntimeCredentialsParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "DescribeDebugRuntimeCredentials",
+		Method:             "GET",
+		PathPattern:        "/v1/debug_runtimes/credentials",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &DescribeDebugRuntimeCredentialsReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*DescribeDebugRuntimeCredentialsOK), nil
+
+}
+
+/*
+DescribeDebugRuntimes gets debug runtimes can filter with these fields runtime id provider zone status owner default return all debug runtimes
+*/
+func (a *Client) DescribeDebugRuntimes(params *DescribeDebugRuntimesParams, authInfo runtime.ClientAuthInfoWriter) (*DescribeDebugRuntimesOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewDescribeDebugRuntimesParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "DescribeDebugRuntimes",
+		Method:             "GET",
+		PathPattern:        "/v1/debug_runtimes",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &DescribeDebugRuntimesReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*DescribeDebugRuntimesOK), nil
+
+}
+
+/*
+DescribeRuntimeCredentials gets runtime credentials filter with these fields runtime credential id status provider owner default return all runtime credentials
+*/
+func (a *Client) DescribeRuntimeCredentials(params *DescribeRuntimeCredentialsParams, authInfo runtime.ClientAuthInfoWriter) (*DescribeRuntimeCredentialsOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewDescribeRuntimeCredentialsParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "DescribeRuntimeCredentials",
+		Method:             "GET",
+		PathPattern:        "/v1/runtimes/credentials",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &DescribeRuntimeCredentialsReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*DescribeRuntimeCredentialsOK), nil
+
+}
+
+/*
+DescribeRuntimeProviderZones gets runtime provider zones
 */
 func (a *Client) DescribeRuntimeProviderZones(params *DescribeRuntimeProviderZonesParams, authInfo runtime.ClientAuthInfoWriter) (*DescribeRuntimeProviderZonesOK, error) {
 	// TODO: Validate the params before sending
@@ -112,7 +315,7 @@ func (a *Client) DescribeRuntimeProviderZones(params *DescribeRuntimeProviderZon
 }
 
 /*
-DescribeRuntimes describes runtime
+DescribeRuntimes gets runtimes can filter with these fields runtime id provider zone status owner default return all runtimes
 */
 func (a *Client) DescribeRuntimes(params *DescribeRuntimesParams, authInfo runtime.ClientAuthInfoWriter) (*DescribeRuntimesOK, error) {
 	// TODO: Validate the params before sending
@@ -141,7 +344,7 @@ func (a *Client) DescribeRuntimes(params *DescribeRuntimesParams, authInfo runti
 }
 
 /*
-GetRuntimeStatistics gets runtime statistics
+GetRuntimeStatistics gets statistics of runtime
 */
 func (a *Client) GetRuntimeStatistics(params *GetRuntimeStatisticsParams, authInfo runtime.ClientAuthInfoWriter) (*GetRuntimeStatisticsOK, error) {
 	// TODO: Validate the params before sending
@@ -195,6 +398,64 @@ func (a *Client) ModifyRuntime(params *ModifyRuntimeParams, authInfo runtime.Cli
 		return nil, err
 	}
 	return result.(*ModifyRuntimeOK), nil
+
+}
+
+/*
+ModifyRuntimeCredential modifies runtime credential
+*/
+func (a *Client) ModifyRuntimeCredential(params *ModifyRuntimeCredentialParams, authInfo runtime.ClientAuthInfoWriter) (*ModifyRuntimeCredentialOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewModifyRuntimeCredentialParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "ModifyRuntimeCredential",
+		Method:             "PATCH",
+		PathPattern:        "/v1/runtimes/credentials",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &ModifyRuntimeCredentialReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*ModifyRuntimeCredentialOK), nil
+
+}
+
+/*
+ValidateRuntimeCredential validates runtime credential
+*/
+func (a *Client) ValidateRuntimeCredential(params *ValidateRuntimeCredentialParams, authInfo runtime.ClientAuthInfoWriter) (*ValidateRuntimeCredentialOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewValidateRuntimeCredentialParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "ValidateRuntimeCredential",
+		Method:             "POST",
+		PathPattern:        "/v1/runtimes/credentials:validate",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &ValidateRuntimeCredentialReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*ValidateRuntimeCredentialOK), nil
 
 }
 

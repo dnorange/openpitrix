@@ -6,31 +6,25 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"fmt"
 
 	"openpitrix.io/openpitrix/pkg/logger"
 	"openpitrix.io/openpitrix/pkg/models"
 	"openpitrix.io/openpitrix/pkg/pb"
 )
 
-type Runtime struct {
-	models.Runtime
-	Credential string
-}
-
-func NewRuntime(ctx context.Context, runtimeId string) (*Runtime, error) {
+func NewRuntime(ctx context.Context, runtimeId string) (*models.RuntimeDetails, error) {
 	runtime, err := getRuntime(ctx, runtimeId)
 	if err != nil {
 		return nil, err
 	}
-	result := &Runtime{
-		Runtime:    *models.PbToRuntime(runtime.Runtime),
-		Credential: runtime.GetRuntimeCredential().GetValue(),
+	result := &models.RuntimeDetails{
+		Runtime:           *models.PbToRuntime(runtime.Runtime),
+		RuntimeCredential: *models.PbToRuntimeCredential(runtime.RuntimeCredential),
 	}
 	return result, nil
 }

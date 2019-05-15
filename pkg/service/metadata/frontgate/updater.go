@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	Version                     = version.ShortVersion
+	FrontgateVersion            = getShortVersion(version.ShortVersion)
 	CheckInterval               = 10 * time.Second
 	RetryInterval               = 3 * time.Second
 	RetryCount                  = 5
@@ -34,22 +34,32 @@ var (
 	DowloadFilePathPattern      = "/opt/openpitrix/bin/%s/%s"
 	PilotVersionFilePath        = "/opt/openpitrix/conf/pilot-version"
 	KeyPrefix                   = "/"
-	KeyRegexp                   = regexp.MustCompile(`^\/\d+\.\d+\.\d+\.\d+\/host\/ip$`)
+	KeyRegexp                   = regexp.MustCompile(`^\/\_metad\/mapping\/default\/(\d+\.\d+\.\d+\.\d+)\/host$`)
 	EtcdEndpoints               = []string{"127.0.0.1:2379"}
 )
 
+func getShortVersion(v string) string {
+	var short string
+	tmp := strings.SplitN(strings.Trim(v, "\""), "-", 2)
+	if len(v) != 0 {
+		short = tmp[0]
+	}
+
+	return short
+}
+
 type Updater struct {
 	conn       *grpc.ClientConn
-	connClosed <-chan struct{}
+	connClosed chan struct{}
 
 	etcd *EtcdClientManager
 	cfg  *pbtypes.FrontgateConfig
 }
 
-func NewUpdater(conn *grpc.ClientConn, connClosed <-chan struct{}, cfg *pbtypes.FrontgateConfig) *Updater {
+func NewUpdater(conn *grpc.ClientConn, cfg *pbtypes.FrontgateConfig) *Updater {
 	return &Updater{
 		conn:       conn,
-		connClosed: connClosed,
+		connClosed: make(chan struct{}),
 		etcd:       NewEtcdClientManager(),
 		cfg:        cfg,
 	}
@@ -66,16 +76,12 @@ func (u *Updater) checkPilotVersionDiff() (bool, string) {
 		return false, ""
 	}
 
-	logger.Debug(ctx, "Get pilot version [%s]", pilotVersion.ShortVersion)
-	logger.Debug(ctx, "Get self  version [%s]", Version)
+	PilotVersion := getShortVersion(pilotVersion.ShortVersion)
 
-	var short string
-	v := strings.SplitN(strings.Trim(pilotVersion.ShortVersion, "\""), "-", 2)
-	if len(v) != 0 {
-		short = v[0]
-	}
+	logger.Debug(ctx, "Get pilot version [%s]", PilotVersion)
+	logger.Debug(ctx, "Get frontgate version [%s]", FrontgateVersion)
 
-	return pilotVersion.ShortVersion != Version, short
+	return PilotVersion != FrontgateVersion, PilotVersion
 }
 
 func (u *Updater) createPilotVersionFile(pilotVersion string) error {
@@ -169,10 +175,11 @@ func (u *Updater) getDroneList() ([]string, error) {
 	}
 
 	drones := []string{}
-	for k, v := range vs {
-		if KeyRegexp.MatchString(k) {
-			logger.Debug(nil, "Matched key [%s] value [%s]", k, v)
-			drones = append(drones, v)
+	for k, _ := range vs {
+		matched := KeyRegexp.FindStringSubmatch(k)
+
+		if len(matched) == 2 {
+			drones = append(drones, matched[1])
 		}
 	}
 
@@ -185,13 +192,7 @@ func (u *Updater) getDroneVersion(ctx context.Context, client pbdrone.DroneServi
 		return "", err
 	}
 
-	var short string
-	v := strings.SplitN(strings.Trim(droneVersion.ShortVersion, "\""), "-", 2)
-	if len(v) != 0 {
-		short = v[0]
-	}
-
-	return short, nil
+	return getShortVersion(droneVersion.ShortVersion), nil
 }
 
 func (u *Updater) distributeDrone(drone string, pilotVersion string) error {
@@ -245,7 +246,38 @@ func (u *Updater) distributeDrones(pilotVersion string) error {
 	return nil
 }
 
+func (u *Updater) SendQuitToMetad() error {
+	logger.Info(nil, "Trying to send quit to metad")
+
+	err := retryutil.Retry(RetryCount, RetryInterval, func() error {
+		_, err := httputil.HttpPost("http://127.0.0.1/quit", "", nil)
+		if err != nil {
+			if !strings.Contains(err.Error(), "EOF") {
+				logger.Error(nil, "Send quit to metad failed, %+v", err)
+				return err
+			}
+		}
+		return nil
+	})
+
+	return err
+}
+
+func (u *Updater) Close() {
+	if !u.cfg.AutoUpdate {
+		return
+	}
+	if u.connClosed != nil {
+		u.connClosed <- struct{}{}
+	}
+}
+
 func (u *Updater) Serve() {
+	if !u.cfg.AutoUpdate {
+		logger.Info(nil, "Not starting updater")
+		return
+	}
+	logger.Info(nil, "Starting updater")
 	ticker := time.NewTicker(CheckInterval)
 	defer ticker.Stop()
 
@@ -263,6 +295,12 @@ func (u *Updater) Serve() {
 					logger.Warn(nil, "Download new release failed, %+v", err)
 					continue
 				}
+
+				err = u.SendQuitToMetad()
+				if err != nil {
+					logger.Error(nil, "Send quit to metad failed, %+v", err)
+				}
+
 				logger.Info(nil, "Frontgate exit")
 				os.Exit(0)
 			}

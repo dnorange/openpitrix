@@ -25,6 +25,9 @@ type OpenpitrixMarketUser struct {
 	// owner
 	Owner string `json:"owner,omitempty"`
 
+	// owner path
+	OwnerPath string `json:"owner_path,omitempty"`
+
 	// user id
 	UserID string `json:"user_id,omitempty"`
 }

@@ -63,21 +63,50 @@ for the describe key pairs operation typically these are written to a http.Reque
 */
 type DescribeKeyPairsParams struct {
 
-	/*Description*/
+	/*Description
+	  key pair description.
+
+	*/
 	Description *string
-	/*KeyPairID*/
+	/*DisplayColumns
+	  select columns to display.
+
+	*/
+	DisplayColumns []string
+	/*KeyPairID
+	  key pair id.
+
+	*/
 	KeyPairID *string
-	/*Limit*/
+	/*Limit
+	  data limit per page, default value 20, max value 200.
+
+	*/
 	Limit *int64
-	/*Name*/
+	/*Name
+	  key pair name.
+
+	*/
 	Name *string
-	/*Offset*/
+	/*Offset
+	  data offset, default 0.
+
+	*/
 	Offset *int64
-	/*Owner*/
+	/*Owner
+	  owner.
+
+	*/
 	Owner []string
-	/*PubKey*/
+	/*PubKey
+	  public key.
+
+	*/
 	PubKey *string
-	/*SearchWord*/
+	/*SearchWord
+	  query key, can filter with these fields(key_pair_id, name, owner).
+
+	*/
 	SearchWord *string
 
 	timeout    time.Duration
@@ -127,6 +156,17 @@ func (o *DescribeKeyPairsParams) WithDescription(description *string) *DescribeK
 // SetDescription adds the description to the describe key pairs params
 func (o *DescribeKeyPairsParams) SetDescription(description *string) {
 	o.Description = description
+}
+
+// WithDisplayColumns adds the displayColumns to the describe key pairs params
+func (o *DescribeKeyPairsParams) WithDisplayColumns(displayColumns []string) *DescribeKeyPairsParams {
+	o.SetDisplayColumns(displayColumns)
+	return o
+}
+
+// SetDisplayColumns adds the displayColumns to the describe key pairs params
+func (o *DescribeKeyPairsParams) SetDisplayColumns(displayColumns []string) {
+	o.DisplayColumns = displayColumns
 }
 
 // WithKeyPairID adds the keyPairID to the describe key pairs params
@@ -228,6 +268,14 @@ func (o *DescribeKeyPairsParams) WriteToRequest(r runtime.ClientRequest, reg str
 			}
 		}
 
+	}
+
+	valuesDisplayColumns := o.DisplayColumns
+
+	joinedDisplayColumns := swag.JoinByFormat(valuesDisplayColumns, "multi")
+	// query array param display_columns
+	if err := r.SetQueryParam("display_columns", joinedDisplayColumns...); err != nil {
+		return err
 	}
 
 	if o.KeyPairID != nil {

@@ -31,6 +31,9 @@ type OpenpitrixMarket struct {
 	// owner
 	Owner string `json:"owner,omitempty"`
 
+	// owner path
+	OwnerPath string `json:"owner_path,omitempty"`
+
 	// status
 	Status string `json:"status,omitempty"`
 

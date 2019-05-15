@@ -16,32 +16,38 @@ import (
 // swagger:model openpitrixModifyAppRequest
 type OpenpitrixModifyAppRequest struct {
 
-	// app id
+	// abstraction of app
+	Abstraction string `json:"abstraction,omitempty"`
+
+	// required, id of app to modify
 	AppID string `json:"app_id,omitempty"`
 
-	// category id
+	// category id of the app
 	CategoryID string `json:"category_id,omitempty"`
 
-	// description
+	// description of the app
 	Description string `json:"description,omitempty"`
 
-	// home
+	// home page of the app
 	Home string `json:"home,omitempty"`
 
-	// keywords
+	// key words of the app
 	Keywords string `json:"keywords,omitempty"`
 
-	// maintainers
+	// maintainers who maintainer the app
 	Maintainers string `json:"maintainers,omitempty"`
 
-	// name
+	// name of the app
 	Name string `json:"name,omitempty"`
 
-	// readme
+	// instructions of the app
 	Readme string `json:"readme,omitempty"`
 
-	// sources
+	// sources of app
 	Sources string `json:"sources,omitempty"`
+
+	// tos of app
+	Tos string `json:"tos,omitempty"`
 }
 
 // Validate validates this openpitrix modify app request

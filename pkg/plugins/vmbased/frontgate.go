@@ -26,7 +26,7 @@ type Frontgate struct {
 }
 
 /*
-cat /opt/openpitrix/conf/drone.conf
+cat /opt/openpitrix/conf/frontgate.conf
 IMAGE="mysql:5.7"
 MOUNT_POINT="/data"
 FILE_NAME="frontgate.conf"
@@ -277,10 +277,10 @@ func (f *Frontgate) CreateClusterLayer() *models.TaskLayer {
 		Append(f.createVolumesLayer(nodeIds, false)).        // create volume
 		Append(f.runInstancesLayer(nodeIds, false)).         // run instance and attach volume to instance
 		Append(f.pingFrontgateLayer(false)).                 // ping frontgate
+		Append(f.setFrontgateConfigLayer(nodeIds, false)).   // set frontgate config
 		Append(f.formatAndMountVolumeLayer(nodeIds, false)). // format and mount volume to instance
 		Append(f.removeContainerLayer(nodeIds, false)).      // remove default container
 		Append(f.pingFrontgateLayer(false)).                 // ping frontgate
-		Append(f.setFrontgateConfigLayer(nodeIds, false)).   // set frontgate config
 		Append(f.pingMetadataBackendLayer(false))            // ping metadata backend
 
 	return headTaskLayer.Child
